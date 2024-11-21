@@ -19,14 +19,11 @@ create_env(){
 
 
 if ! [ -d "${rundir}/venv" ] ;then
-   echo "Creating venv: ${rundir}/venv"
+   echo "Creating venv: ${rundir}/venv" >&2
    echo
    create_env
-elif ( [[ "$(modification_time "${rundir}/requirements.txt")" -gt "$(modification_time "${rundir}/venv/bin/activate")" ]] ||
-       [[ "$(modification_time "${rundir}/venv/sum/sum")" -gt  "$(modification_time "${rundir}/venv/bin/activate")" ]]
-     );
-then
-   echo "Recreating venv: ${rundir}/venv"
+elif [[ "$(modification_time "${rundir}/requirements.txt")" -gt "$(modification_time "${rundir}/venv/bin/activate")" ]];then
+   echo "Recreating venv: ${rundir}/venv" >&2
    echo
    create_env
 else
