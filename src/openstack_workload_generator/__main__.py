@@ -65,27 +65,13 @@ def establish_connection():
     cloud_config = config.get_one(args.os_cloud)
     return Connection(config=cloud_config)
 
-
-def get_effective_config():
-    try:
-        if not str(args.config).startswith("/"):
-            args.config = \
-                str(os.path.realpath(os.path.dirname(os.path.realpath(__file__))) + "/../../profiles/default.yaml")
-
-        with open(args.config, 'r') as file:
-            Config.CONFIG = yaml.safe_load(file)
-            LOGGER.info("The effective configuration: \n>>>\n" + pformat(Config.CONFIG, indent=2, compact=False)
-                        + "\n<<<")
-    except Exception as e:
-        LOGGER.error(f"Unable to read configuration: {e}")
-        sys.exit(1)
-
-
 time_start = time.time()
+
+Config.load_config(args.config)
+Config.show_effective_config()
 
 if args.create_domains:
     conn = establish_connection()
-    get_effective_config()
     scs_domains: dict[str, WorkloadGeneratorDomain] = dict()
 
     count_domains = len(args.create_domains)
@@ -116,7 +102,6 @@ if args.create_domains:
 
 if args.delete_domains:
     conn = establish_connection()
-    get_effective_config()
     for domain_name in args.delete_domains:
         os = WorkloadGeneratorDomain(conn, domain_name)
         os.delete_domain()
