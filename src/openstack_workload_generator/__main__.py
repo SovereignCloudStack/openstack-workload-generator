@@ -72,7 +72,7 @@ Config.show_effective_config()
 
 if args.create_domains:
     conn = establish_connection()
-    scs_domains: dict[str, WorkloadGeneratorDomain] = dict()
+    workload_domains: dict[str, WorkloadGeneratorDomain] = dict()
 
     count_domains = len(args.create_domains)
     count_projects = count_domains * len(args.create_projects)
@@ -83,13 +83,13 @@ if args.create_domains:
     for domain_name in args.create_domains:
         domain = WorkloadGeneratorDomain(conn, domain_name)
         domain.create_and_get_domain()
-        scs_domains[domain_name] = domain
+        workload_domains[domain_name] = domain
 
-    for scs_domain in scs_domains.values():
-        scs_domain.create_and_get_projects(args.create_projects)
+    for workload_domain in workload_domains.values():
+        workload_domain.create_and_get_projects(args.create_projects)
 
-    for scs_domain in scs_domains.values():
-        for project in scs_domain.scs_projects.values():
+    for workload_domain in workload_domains.values():
+        for project in workload_domain.workload_projects.values():
             if project.project_name not in args.create_projects:
                 continue
             project.get_and_create_machines(args.create_machines)
