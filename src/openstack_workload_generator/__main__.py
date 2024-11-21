@@ -9,11 +9,12 @@ from pprint import pformat
 
 import yaml
 
-from helpers import setup_logging, cloud_checker, item_checker
+from entities.helpers import setup_logging, cloud_checker, item_checker
 from openstack.connection import Connection
 from openstack.config import loader
 
-import landscape
+from entities.helpers import Config
+from entities import WorkloadGeneratorDomain
 
 LOGGER = logging.getLogger()
 
@@ -72,8 +73,8 @@ def get_effective_config():
                 str(os.path.realpath(os.path.dirname(os.path.realpath(__file__))) + "/../../profiles/default.yaml")
 
         with open(args.config, 'r') as file:
-            landscape.CONFIG = yaml.safe_load(file)
-            LOGGER.info("The effective configuration: \n>>>\n" + pformat(landscape.CONFIG, indent=2, compact=False)
+            Config.CONFIG = yaml.safe_load(file)
+            LOGGER.info("The effective configuration: \n>>>\n" + pformat(Config.CONFIG, indent=2, compact=False)
                         + "\n<<<")
     except Exception as e:
         LOGGER.error(f"Unable to read configuration: {e}")
@@ -85,7 +86,7 @@ time_start = time.time()
 if args.create_domains:
     conn = establish_connection()
     get_effective_config()
-    scs_domains: dict[str, landscape.WorkloadGeneratorDomain] = dict()
+    scs_domains: dict[str, WorkloadGeneratorDomain] = dict()
 
     count_domains = len(args.create_domains)
     count_projects = count_domains * len(args.create_projects)
@@ -94,7 +95,7 @@ if args.create_domains:
         f"Creating {count_domains} domains, with {count_projects} projects, with {count_hosts} machines in summary")
 
     for domain_name in args.create_domains:
-        domain = landscape.WorkloadGeneratorDomain(conn, domain_name)
+        domain = WorkloadGeneratorDomain(conn, domain_name)
         domain.create_and_get_domain()
         scs_domains[domain_name] = domain
 
@@ -117,7 +118,7 @@ if args.delete_domains:
     conn = establish_connection()
     get_effective_config()
     for domain_name in args.delete_domains:
-        os = landscape.WorkloadGeneratorDomain(conn, domain_name)
+        os = WorkloadGeneratorDomain(conn, domain_name)
         os.delete_domain()
 
 sys.exit(0)
