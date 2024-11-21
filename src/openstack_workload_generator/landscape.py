@@ -26,7 +26,9 @@ PROJECT_CACHE: dict[str, dict[str, str]] = dict()
 
 
 def get_config(key: str, regex: str = ".+",
-               multi_line: bool = False, parent_key: str | None = None, default: str | list[str]| None = None) -> str | list[str]:
+               multi_line: bool = False, parent_key: str | None = None, default: str | list[str] | None = None) -> str | \
+                                                                                                                   list[
+                                                                                                                       str]:
     lines = [default]
     try:
         if parent_key:
@@ -68,7 +70,7 @@ def project_ident(project_id: str) -> str:
     return f"project '{project}' in {domain}"
 
 
-class SCSLandscapeTestUser:
+class WorkloadGeneratorTestUser:
 
     def __init__(self, conn: Connection, user_name: str, domain: Domain):
         self.conn = conn
@@ -112,7 +114,7 @@ class SCSLandscapeTestUser:
         raise RuntimeError(f"No such role {role_name}")
 
 
-class SCSLandscapeTestNetwork:
+class WorkloadGeneratorNetwork:
 
     def __init__(self, conn: Connection, project: Project,
                  security_group_name_ingress: str, security_group_name_egress: str):
@@ -123,12 +125,12 @@ class SCSLandscapeTestNetwork:
         self.router_name = f"localrouter-{self.project.name}"
         self.security_group_name_ingress = security_group_name_ingress
         self.security_group_name_egress = security_group_name_egress
-        self.obj_network: Network | None = SCSLandscapeTestNetwork._find_network(self.network_name, conn, project)
-        self.obj_subnet: Subnet | None = SCSLandscapeTestNetwork._find_subnet(self.network_name, conn, project)
-        self.obj_router: Router | None = SCSLandscapeTestNetwork._find_router(self.router_name, conn, project)
-        self.obj_ingress_security_group: SecurityGroup | None = SCSLandscapeTestNetwork._find_security_group(
+        self.obj_network: Network | None = WorkloadGeneratorNetwork._find_network(self.network_name, conn, project)
+        self.obj_subnet: Subnet | None = WorkloadGeneratorNetwork._find_subnet(self.network_name, conn, project)
+        self.obj_router: Router | None = WorkloadGeneratorNetwork._find_router(self.router_name, conn, project)
+        self.obj_ingress_security_group: SecurityGroup | None = WorkloadGeneratorNetwork._find_security_group(
             self.security_group_name_ingress, conn, project)
-        self.obj_egress_security_group: SecurityGroup | None = SCSLandscapeTestNetwork._find_security_group(
+        self.obj_egress_security_group: SecurityGroup | None = WorkloadGeneratorNetwork._find_security_group(
             self.security_group_name_egress, conn, project)
 
     @staticmethod
@@ -332,7 +334,7 @@ class SCSLandscapeTestNetwork:
         return self.obj_egress_security_group
 
 
-class SCSLandscapeTestMachine:
+class WorkloadGeneratorMachine:
 
     def __init__(self, conn: Connection, project: Project, machine_name: str,
                  security_group_name_ingress: str,
@@ -395,7 +397,7 @@ class SCSLandscapeTestMachine:
                 "volume_size": int(get_config("vm_volume_size_gb", r"\d+")),
                 "delete_on_termination": True,
             }],
-            user_data=SCSLandscapeTestMachine._get_user_script(),
+            user_data=WorkloadGeneratorMachine._get_user_script(),
             security_groups=[
                 {"name": self.security_group_name_ingress},
                 {"name": self.security_group_name_egress},
@@ -471,30 +473,30 @@ class SCSLandscapeTestMachine:
             LOGGER.info(f"Server '{self.obj.name}' is already running.")
 
 
-class SCSLandscapeTestProject:
+class WorkloadGeneratorProject:
 
     def __init__(self, admin_conn: Connection, project_name: str, domain: Domain,
-                 user: SCSLandscapeTestUser):
+                 user: WorkloadGeneratorTestUser):
         self._admin_conn: Connection = admin_conn
         self._project_conn: Connection | None = None
         self.project_name: str = project_name
         self.security_group_name_ingress: str = f"ingress-ssh-{project_name}"
         self.security_group_name_egress: str = f"egress-any-{project_name}"
         self.domain: Domain = domain
-        self.user: SCSLandscapeTestUser = user
+        self.user: WorkloadGeneratorTestUser = user
         self.obj: Project = self._admin_conn.identity.find_project(project_name, domain_id=self.domain.id)
         if self.obj:
             PROJECT_CACHE[self.obj.id] = {"name": self.obj.name, "domain_id": self.domain.id}
-        self.scs_network: SCSLandscapeTestNetwork | None = \
-            SCSLandscapeTestProject._get_network(admin_conn, self.obj,
-                                                 self.security_group_name_ingress,
-                                                 self.security_group_name_egress
-                                                 )
-        self.scs_machines: dict[str, SCSLandscapeTestMachine] = \
-            SCSLandscapeTestProject._get_machines(admin_conn, self.obj,
+        self.scs_network: WorkloadGeneratorNetwork | None = \
+            WorkloadGeneratorProject._get_network(admin_conn, self.obj,
                                                   self.security_group_name_ingress,
                                                   self.security_group_name_egress
                                                   )
+        self.scs_machines: dict[str, WorkloadGeneratorMachine] = \
+            WorkloadGeneratorProject._get_machines(admin_conn, self.obj,
+                                                   self.security_group_name_ingress,
+                                                   self.security_group_name_egress
+                                                   )
         self.ssh_key: Keypair | None = None
 
     @property
@@ -515,23 +517,23 @@ class SCSLandscapeTestProject:
     def _get_network(conn: Connection, obj: Project,
                      security_group_name_ingress: str,
                      security_group_name_egress: str,
-                     ) -> None | SCSLandscapeTestNetwork:
+                     ) -> None | WorkloadGeneratorNetwork:
         if not obj:
             return None
-        return SCSLandscapeTestNetwork(conn, obj, security_group_name_ingress, security_group_name_egress)
+        return WorkloadGeneratorNetwork(conn, obj, security_group_name_ingress, security_group_name_egress)
 
     @staticmethod
     def _get_machines(conn: Connection, obj: Project,
                       security_group_name_ingress: str,
                       security_group_name_egress: str,
-                      ) -> dict[str, SCSLandscapeTestMachine]:
+                      ) -> dict[str, WorkloadGeneratorMachine]:
         result = dict()
         if not obj:
             return result
 
         for server in conn.compute.servers(all_projects=True, project_id=obj.id):
-            scs_server = SCSLandscapeTestMachine(conn, obj, server.name, security_group_name_ingress,
-                                                 security_group_name_egress)
+            scs_server = WorkloadGeneratorMachine(conn, obj, server.name, security_group_name_ingress,
+                                                  security_group_name_egress)
             scs_server.obj = server
             result[scs_server.machine_name] = scs_server
         return result
@@ -599,8 +601,8 @@ class SCSLandscapeTestProject:
     def create_and_get_project(self) -> Project:
         if self.obj:
             self.adapt_quota()
-            self.scs_network = SCSLandscapeTestNetwork(self._admin_conn, self.obj, self.security_group_name_ingress,
-                                                       self.security_group_name_egress)
+            self.scs_network = WorkloadGeneratorNetwork(self._admin_conn, self.obj, self.security_group_name_ingress,
+                                                        self.security_group_name_egress)
             self.scs_network.create_and_get_network_setup()
             return self.obj
 
@@ -618,8 +620,8 @@ class SCSLandscapeTestProject:
         self.assign_role_to_user_for_project("load-balancer_member")
         self.assign_role_to_user_for_project("member")
 
-        self.scs_network = SCSLandscapeTestNetwork(self.project_conn, self.obj, self.security_group_name_ingress,
-                                                   self.security_group_name_egress)
+        self.scs_network = WorkloadGeneratorNetwork(self.project_conn, self.obj, self.security_group_name_ingress,
+                                                    self.security_group_name_egress)
         self.scs_network.create_and_get_network_setup()
 
         return self.obj
@@ -664,8 +666,8 @@ class SCSLandscapeTestProject:
             return
         for nr, machine_name in enumerate(sorted(machines)):
             if machine_name not in self.scs_machines:
-                machine = SCSLandscapeTestMachine(self.project_conn, self.obj, machine_name,
-                                                  self.security_group_name_ingress, self.security_group_name_egress)
+                machine = WorkloadGeneratorMachine(self.project_conn, self.obj, machine_name,
+                                                   self.security_group_name_ingress, self.security_group_name_egress)
                 machine.create_or_get_server(self.scs_network.obj_network)
                 self.scs_machines[machine.machine_name] = machine
             if nr == 0:
@@ -707,7 +709,7 @@ class SCSLandscapeTestProject:
             self._project_conn = None
 
 
-class SCSLandscapeTestDomain:
+class WorkloadGeneratorDomain:
 
     def __init__(self, conn: Connection, domain_name: str):
         self.conn = conn
@@ -715,24 +717,24 @@ class SCSLandscapeTestDomain:
         self.obj: Domain = self.conn.identity.find_domain(domain_name)
         if self.obj:
             DOMAIN_CACHE[self.obj.id] = self.obj.name
-        self.scs_user = SCSLandscapeTestDomain._get_user(conn, domain_name, self.obj)
-        self.scs_projects: dict[str, SCSLandscapeTestProject] = SCSLandscapeTestDomain._get_projects(
+        self.scs_user = WorkloadGeneratorDomain._get_user(conn, domain_name, self.obj)
+        self.scs_projects: dict[str, WorkloadGeneratorProject] = WorkloadGeneratorDomain._get_projects(
             conn, self.obj, self.scs_user)
 
     @staticmethod
     def _get_user(conn: Connection, domain_name: str, obj: Domain):
         if not obj:
             return None
-        return SCSLandscapeTestUser(conn, f"{domain_name}-admin", obj)
+        return WorkloadGeneratorTestUser(conn, f"{domain_name}-admin", obj)
 
     @staticmethod
-    def _get_projects(conn: Connection, domain: Domain | None, user: SCSLandscapeTestUser | None) \
-            -> dict[str, SCSLandscapeTestProject]:
+    def _get_projects(conn: Connection, domain: Domain | None, user: WorkloadGeneratorTestUser | None) \
+            -> dict[str, WorkloadGeneratorProject]:
         if not domain or not user:
             return dict()
-        result: dict[str, SCSLandscapeTestProject] = dict()
+        result: dict[str, WorkloadGeneratorProject] = dict()
         for project in conn.identity.projects(domain_id=domain.id):
-            result[project.name] = SCSLandscapeTestProject(conn, project.name, domain, user)
+            result[project.name] = WorkloadGeneratorProject(conn, project.name, domain, user)
         return result
 
     def create_and_get_domain(self) -> Domain:
@@ -747,7 +749,7 @@ class SCSLandscapeTestDomain:
         DOMAIN_CACHE[self.obj.id] = self.obj.name
         LOGGER.info(f"Created {domain_ident(self.obj.id)}")
 
-        self.scs_user = SCSLandscapeTestDomain._get_user(self.conn, self.domain_name, self.obj)
+        self.scs_user = WorkloadGeneratorDomain._get_user(self.conn, self.domain_name, self.obj)
         return self.obj
 
     def disable_domain(self):
@@ -777,7 +779,7 @@ class SCSLandscapeTestDomain:
         for project_name in create_projects:
             if project_name in self.scs_projects:
                 continue
-            project = SCSLandscapeTestProject(self.conn, project_name, self.obj, self.scs_user)
+            project = WorkloadGeneratorProject(self.conn, project_name, self.obj, self.scs_user)
             project.create_and_get_project()
             project.get_or_create_ssh_key()
             self.scs_projects[project_name] = project

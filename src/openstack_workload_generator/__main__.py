@@ -85,7 +85,7 @@ time_start = time.time()
 if args.create_domains:
     conn = establish_connection()
     get_effective_config()
-    scs_domains: dict[str, landscape.SCSLandscapeTestDomain] = dict()
+    scs_domains: dict[str, landscape.WorkloadGeneratorDomain] = dict()
 
     count_domains = len(args.create_domains)
     count_projects = count_domains * len(args.create_projects)
@@ -94,7 +94,7 @@ if args.create_domains:
         f"Creating {count_domains} domains, with {count_projects} projects, with {count_hosts} machines in summary")
 
     for domain_name in args.create_domains:
-        domain = landscape.SCSLandscapeTestDomain(conn, domain_name)
+        domain = landscape.WorkloadGeneratorDomain(conn, domain_name)
         domain.create_and_get_domain()
         scs_domains[domain_name] = domain
 
@@ -117,7 +117,7 @@ if args.delete_domains:
     conn = establish_connection()
     get_effective_config()
     for domain_name in args.delete_domains:
-        os = landscape.SCSLandscapeTestDomain(conn, domain_name)
+        os = landscape.WorkloadGeneratorDomain(conn, domain_name)
         os.delete_domain()
 
 sys.exit(0)
