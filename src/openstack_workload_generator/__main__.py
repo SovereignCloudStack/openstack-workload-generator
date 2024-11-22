@@ -2,12 +2,9 @@
 
 import argparse
 import logging
-import sys
 import os
+import sys
 import time
-from pprint import pformat
-
-import yaml
 
 from entities.helpers import setup_logging, cloud_checker, item_checker
 from openstack.connection import Connection
@@ -26,31 +23,45 @@ parser.add_argument('--log_level', metavar='loglevel', type=str,
 
 parser.add_argument('--os_cloud', type=cloud_checker,
                     default=os.environ.get("OS_CLOUD", "admin"),
-                    help='The openstack config to use')
+                    help='The openstack config to use, defaults to the value of the OS_CLOUD '
+                         'environment variable or "admin" if the variable is not set')
 
 parser.add_argument('--ansible_inventory', type=str, nargs="?",
                     help="Dump the created servers as an ansible inventory to the specified directory")
 
 parser.add_argument('--config', type=str,
-                    default="test-default.yaml",
-                    help='The config file for environment creation')
+                    default="default.yaml",
+                    help='The config file for environment creation, define a path to the'
+                         ' yaml file or a subpath in the profiles folder')
 
-exclusive_group = parser.add_mutually_exclusive_group(required=True)
+exclusive_group_domain = parser.add_mutually_exclusive_group(required=True)
 
-exclusive_group.add_argument('--create_domains', type=item_checker, nargs="+", default=None,
-                             help='A list of domains to be created')
+exclusive_group_domain.add_argument('--create_domains', type=item_checker, nargs="+", default=None,
+                                    metavar="DOMAINNAME",
+                                    help='A list of domains to be created')
 
-exclusive_group.add_argument('--delete_domains', type=item_checker, nargs="+", default=None,
-                             help='A list of domains to be deleted')
+exclusive_group_domain.add_argument('--delete_domains', type=item_checker, nargs="+", default=None,
+                                    metavar="DOMAINNAME",
+                                    help='A list of domains to be deleted, all child elements are recursively deleted')
 
-exclusive_group.add_argument('--show_secrets', '-s', type=str, nargs="+", default=None,
-                             help='Show all or a number of secrets')
+exclusive_group_project = parser.add_mutually_exclusive_group(required=True)
 
-parser.add_argument('--create_projects', '-p', type=item_checker, nargs="+", default=["test1"],
+exclusive_group_project.add_argument('--create_projects', type=item_checker, nargs="+", default=None,
+                    metavar="PROJECTNAME",
                     help='A list of projects to be created in the created domains')
 
-parser.add_argument('--create_machines', '-m', type=item_checker, nargs="+", default=["test1"],
+exclusive_group_project.add_argument('--delete_projects', type=item_checker, nargs="+", default=None,
+                    metavar="PROJECTNAME",
+                    help='A list of projects to be deleted in the created domains, all child elements are recursively deleted')
+
+exclusive_group_machines = parser.add_mutually_exclusive_group(required=True)
+exclusive_group_machines.add_argument('--create_machines', type=item_checker, nargs="+", default=None,
+                    metavar="SERVERNAME",
                     help='A list of vms to be created in the created domains')
+
+exclusive_group_machines.add_argument('--delete_machines', type=item_checker, nargs="+", default=None,
+                    metavar="SERVERNAME",
+                    help='A list of vms to be deleted in the created projects')
 
 args = parser.parse_args()
 
@@ -73,37 +84,40 @@ Config.show_effective_config()
 if args.create_domains:
     conn = establish_connection()
     workload_domains: dict[str, WorkloadGeneratorDomain] = dict()
-
-    count_domains = len(args.create_domains)
-    count_projects = count_domains * len(args.create_projects)
-    count_hosts = count_projects * len(args.create_machines)
-    LOGGER.info(
-        f"Creating {count_domains} domains, with {count_projects} projects, with {count_hosts} machines in summary")
-
     for domain_name in args.create_domains:
         domain = WorkloadGeneratorDomain(conn, domain_name)
         domain.create_and_get_domain()
         workload_domains[domain_name] = domain
 
-    for workload_domain in workload_domains.values():
-        workload_domain.create_and_get_projects(args.create_projects)
+    if args.create_projects:
+        for workload_domain in workload_domains.values():
+            workload_domain.create_and_get_projects(args.create_projects)
 
-    for workload_domain in workload_domains.values():
-        for project in workload_domain.workload_projects.values():
-            if project.project_name not in args.create_projects:
-                continue
-            project.get_and_create_machines(args.create_machines)
-            if args.ansible_inventory:
-                project.dump_inventory_hosts(args.ansible_inventory)
+        for workload_domain in workload_domains.values():
+            for workload_project in workload_domain.get_projects(args.create_projects):
+                if args.create_machines:
+                    workload_project.get_and_create_machines(args.create_machines)
+                    if args.ansible_inventory:
+                        workload_project.dump_inventory_hosts(args.ansible_inventory)
+                elif args.delete_machines:
+                    for machine_obj in workload_project.get_machines(args.delete_machines):
+                          machine_obj.delete_machine()
+        sys.exit(0)
+    elif args.delete_projects:
+        conn = establish_connection()
+        for domain_name in args.create_domains:
+            domain_obj = WorkloadGeneratorDomain(conn, domain_name)
+            for project_obj in domain_obj.get_projects(args.delete_projects):
+                project_obj.delete_project()
+        sys.exit(0)
 
     duration = (time.time() - time_start) / 60
-    item_rate = duration / (count_domains + count_projects + count_hosts)
-    LOGGER.info(f"Execution finished after {int(duration)} minutes, item rate {item_rate}/item")
-
-if args.delete_domains:
+    LOGGER.info(f"Execution finished after {int(duration)} minutes")
+elif args.delete_domains:
     conn = establish_connection()
     for domain_name in args.delete_domains:
-        os = WorkloadGeneratorDomain(conn, domain_name)
-        os.delete_domain()
+        domain_obj = WorkloadGeneratorDomain(conn, domain_name)
+        domain_obj.delete_domain()
+    sys.exit(0)
 
 sys.exit(0)

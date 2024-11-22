@@ -1,3 +1,4 @@
+import inspect
 import logging
 import os
 import sys
@@ -14,14 +15,27 @@ LOGGER = logging.getLogger()
 
 
 class Config:
-    _config: dict[str, str | dict[str, str]] = dict()
+    _config: dict[str, str | dict[str, str]] = \
+        {
+            'admin_domain_password': None,
+            'admin_vm_password': None,
+            'admin_vm_ssh_key': None,
+            'admin_vm_ssh_keypair_name': 'my_ssh_public_key',
+            'project_ipv4_subnet': '192.168.200.0/24',
+            'public_network': "public",
+            'vm_flavor': 'SCS-1L-1',
+            'vm_image': 'Ubuntu 24.04',
+            'vm_volume_size_gb': 10,
+            'cloud_init_extra_script': """#!/bin/bash\necho "HELLO WORLD"; date > READY; whoami >> READY""",
+            'wait_for_server_timeout': 300,
+        }
+
     _file: str = None
 
     @staticmethod
     def get(key: str, regex: str = ".+",
-            multi_line: bool = False, parent_key: str | None = None, default: str | list[str] | None = None) -> str | \
-                                                                                                                list[
-                                                                                                                    str]:
+            multi_line: bool = False, parent_key: str | None = None, default: str | list[str] | None = None) \
+            -> str | list[ str]:
         lines = [default]
         try:
             if parent_key:
@@ -50,27 +64,97 @@ class Config:
 
     @staticmethod
     def load_config(config_file: str):
-        try:
-            if not str(config_file).startswith("/"):
-                config_file = \
-                    str(os.path.realpath(
-                        os.path.dirname(os.path.realpath(__file__))) + "/../../../profiles/default.yaml")
+            potential_profile_file = \
+                str(os.path.realpath(
+                    os.path.dirname(os.path.realpath(__file__))) + f"/../../../profiles/{config_file}")
 
-            Config._file = config_file
-            with open(config_file, 'r') as file:
-                Config._config = yaml.safe_load(file)
+            if os.path.exists(config_file):
+                Config._file = config_file
+            elif not str(config_file).startswith("/") and os.path.exists(potential_profile_file):
+                Config._file = potential_profile_file
+            else:
+                LOGGER.error(f"Cannot find a profile at {config_file} or {potential_profile_file}")
+                sys.exit(1)
 
-        except Exception as e:
-            LOGGER.error(f"Unable to read configuration: {e}")
-            sys.exit(1)
+            Config._file = os.path.realpath(Config._file)
+
+            try:
+                LOGGER.info(f"Reading {Config._file}")
+                with open(str(Config._file), 'r') as file_fd:
+                    Config._config.update(yaml.safe_load(file_fd))
+
+            except Exception as e:
+                LOGGER.error(f"Unable to read configuration: {e}")
+                sys.exit(1)
+
+
+
+    @staticmethod
+    def check_config(cls):
+        methods = inspect.getmembers(cls, predicate=inspect.isfunction)
+        for name, method in methods:
+            if name.startswith("get_"):  # Check for "get_" prefix
+                method()
+        for quota_type in ["compute_quotas", "block_storage_quotas", "network_quotas"]:
+            if quota_type not in Config._config:
+                continue
+            for key_name, value in Config._config[quota_type].keys():
+                Config.quota(key_name,quota_type,"1")
 
     @staticmethod
     def show_effective_config():
+        Config.check_config(Config)
         LOGGER.info(
             "The effective configuration from %s : \n>>>\n%s\n<<<" % (
                 Config._file, pformat(Config._config, indent=2, compact=False))
         )
+    @staticmethod
+    def get_public_network() -> str:
+        return Config.get("public_network", "[a-zA-Z][a-zA-Z0-9]*")
 
+    @staticmethod
+    def get_admin_vm_password() -> str:
+        return Config.get("admin_vm_password")
+
+    @staticmethod
+    def get_vm_flavor() -> str:
+        return Config.get("vm_flavor")
+
+    @staticmethod
+    def get_cloud_init_extra_script() -> str:
+        return Config.get("cloud_init_extra_script", multi_line=True)
+
+    @staticmethod
+    def get_vm_image() -> str:
+        return Config.get("vm_image")
+
+    @staticmethod
+    def get_vm_volume_size_gb() -> int:
+        return int(Config.get("vm_volume_size_gb", regex=r"\d+"))
+
+    @staticmethod
+    def get_admin_vm_ssh_keypair_name() -> str:
+        return Config.get("admin_vm_ssh_keypair_name")
+
+    @staticmethod
+    def get_wait_for_server_timeout() -> int:
+        return int(Config.get("wait_for_server_timeout", regex=r"\d+"))
+
+    @staticmethod
+    def get_project_ipv4_subnet() -> str:
+        return Config.get("project_ipv4_subnet", regex=r"\d+\.\d+\.\d+\.\d+/\d\d")
+
+    @staticmethod
+    def get_admin_vm_ssh_key() -> str:
+        return "\n".join(Config.get("admin_vm_ssh_key", r"ssh-\S+\s\S+\s\S+", multi_line=True))
+
+    @staticmethod
+    def get_admin_domain_password() -> str:
+        return Config.get("admin_domain_password", regex=r".{5,}")
+
+    @staticmethod
+    def quota(quota_name: str, quota_type: str, default_value: str) -> int:
+        return int(Config.get(quota_name, regex=f"\d+", parent_key=quota_type, default=default_value))
 
 class DomainCache:
     _domains: dict[str, str] = dict()
