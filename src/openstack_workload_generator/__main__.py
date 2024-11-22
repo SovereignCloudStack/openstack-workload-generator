@@ -27,7 +27,8 @@ parser.add_argument('--os_cloud', type=cloud_checker,
                          'environment variable or "admin" if the variable is not set')
 
 parser.add_argument('--ansible_inventory', type=str, nargs="?",
-                    help="Dump the created servers as an ansible inventory to the specified directory")
+                    help="Dump the created servers as an ansible inventory to the specified directory, "
+                         "adds a ssh proxy jump for the hosts without a floating ip")
 
 parser.add_argument('--config', type=str,
                     default="default.yaml",

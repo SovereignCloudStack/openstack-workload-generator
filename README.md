@@ -13,13 +13,20 @@ The tool uses the Openstack API or the Python Openstack SDK to automatically cre
 
 When creating, the specified resources (e.g. domains, projects, servers, ...) are created if they have not already 
 been created. In this way, several creation processes can also be executed in a sequence to create a specific setup 
-with certain variants of server properties. The parameters that are used during an execution can be defined 
+with certain variants of server properties. If provider network is defined the first host in the project gets a floati
+
+The parameters that are used during an execution can be defined 
 via a YAML file.
 
 When deleting, the tool proceeds recursively, automatically identifying and deleting all contained resources.
 
 In addition to the servers created, an Ansible inventory directory can also be created, which can be used as the 
 basis for later automation.
+
+# Usage
+
+```
+```
 
 # Testing Scenarios
 
@@ -129,4 +136,64 @@ echo "HELLO WORLD"; date > READY; whoami >> READY<<<
     --create_projects smoketest-project{1..2} \
     --create_machines smoketest-testvm{1..2}
 ```
+
+
+## Example usage: A huge stresstest scenario
+
+### Scenario Details
+
+* 10 domains, with 6 projects each , with 9 machines each.
+  * 9 domains
+  * 45 projects
+  * 540 virtual machines
+* 4GB RAM per machine, 2.1TB RAM in total
+* 10GB Disk per machine, 5.5TB DISK in total
+* [The configuration profile](profiles/stresstest.yaml)
+  * Downloads a [shellscript](http://10.10.23.254:28080/stresstest.sh) from a server which is reachable by all virtual machines
+  * Executes the script in a screen session
+  * Prevents to execute multiple scripts in parallel by checking if there is already a screen named "execute"
+
+### Testing procedure
+
+1. Move stresstestfile out of the way at the central server
+  ```
+  ssh scs-manager1
+  mv /srv/www/stresstest.sh /srv/www/stresstest.sh.disabled
+  ```
+2. Test the scenario creation
+  ```
+  ./openstack_workload_generator \
+    --config stresstest.yaml \
+    --create_domains stresstest1 \
+    --create_projects stresstest-project1 \
+    --create_machines stresstestvm1
+  ```
+3. Create the full scenario
+  ```
+  ./openstack_workload_generator \
+    --config stresstest.yaml \
+    --create_domains stresstest{1..10} \
+    --create_projects stresstest-project{1..6} \
+    --create_machines stresstestvm{1..9} \
+    --ansible_inventory /tmp/stresstest-inventory
+  ```
+4. Check the created scenario
+  ```
+  openstack domain list
+  openstack project list --long
+  openstack server list --all-projects --long
+  ```
+5. Activate the stresstestfile
+  ```
+  ssh scs-manager1
+  cat <<EOF
+  #!/bin/bash
+  stress-ng --vm 8 --vm-bytes 80% -t 1h
+  EOF
+  mv /srv/www/stresstest.sh.disabled /srv/www/stresstest.sh
+  ```
+6. Purge the scenario
+  ```
+  ./openstack_workload_generator --delete_domains stresstest{1..10}
+  ```
 

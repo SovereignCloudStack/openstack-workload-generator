@@ -25,6 +25,7 @@ class WorkloadGeneratorProject:
         self.security_group_name_ingress: str = f"ingress-ssh-{project_name}"
         self.security_group_name_egress: str = f"egress-any-{project_name}"
         self.domain: Domain = domain
+        self.ssh_proxy_jump: str | None = None
         self.user: WorkloadGeneratorTestUser = user
         self.obj: Project = self._admin_conn.identity.find_project(project_name, domain_id=self.domain.id)
         if self.obj:
@@ -213,18 +214,31 @@ class WorkloadGeneratorProject:
             LOGGER.warning("Not creating a virtual machine, because 'none' was in the list")
             self.close_connection()
             return
+
+        floating_ips_amount = Config.get_number_of_floating_ips_per_project()
+
         for nr, machine_name in enumerate(sorted(machines)):
             if machine_name not in self.workload_machines:
                 machine = WorkloadGeneratorMachine(self.project_conn, self.obj, machine_name,
                                                    self.security_group_name_ingress, self.security_group_name_egress)
                 machine.create_or_get_server(self.workload_network.obj_network)
+
+                if machine.floating_ip:
+                    self.ssh_proxy_jump = machine.floating_ip
+
                 self.workload_machines[machine.machine_name] = machine
-            if nr == 0:
+
+            if floating_ips_amount > 0:
                 self.workload_machines[machine_name].add_floating_ip()
+                self.ssh_proxy_jump = self.workload_machines[machine_name].floating_ip
+                floating_ips_amount -= 1
+
         self.close_connection()
 
     def dump_inventory_hosts(self, directory_location: str):
         for workload_machine in self.workload_machines.values():
+
+            workload_machine.update_assigned_ips()
             data = {
                 "id": workload_machine.obj.id,
                 "status": workload_machine.obj.status,
@@ -232,10 +246,14 @@ class WorkloadGeneratorProject:
                 "hostname": workload_machine.machine_name,
                 "project": workload_machine.project.name,
                 "domain": self.domain.name,
-                "ansible_host": workload_machine.floating_ip,
+                "ansible_host": workload_machine.floating_ip or workload_machine.internal_ip,
                 "internal_ip": workload_machine.internal_ip,
             }
-            base_dir = f"{directory_location}/{data['hostname']}-{data['project']}-{data['domain']}"
+
+            if self.ssh_proxy_jump and not workload_machine.floating_ip:
+                data["ansible_ssh_common_args"] = f"-o ProxyJump={self.ssh_proxy_jump} "
+
+            base_dir = f"{directory_location}/{data['domain']}-{data['project']}-{data['hostname']}"
             filename = f'{base_dir}/data.yml'
             os.makedirs(base_dir, exist_ok=True)
             with open(filename, 'w') as file:

@@ -88,7 +88,7 @@ class WorkloadGeneratorMachine:
         cloud_init_script = base64.b64encode(cloud_init_script.encode('utf-8')).decode('utf-8')
         return cloud_init_script
 
-    def _update_ips(self):
+    def update_assigned_ips(self):
         if self.obj.addresses:
             for network_name, addresses in self.obj.addresses.items():
                 for address in addresses:
@@ -104,13 +104,12 @@ class WorkloadGeneratorMachine:
                         raise NotImplementedError(f"{address} not implemented")
 
     def add_floating_ip(self):
-        default_provider_network = "public"
         public_network = self.conn.network.find_network(Config.get_public_network())
         if not public_network:
-            LOGGER.error(f"There is no '{default_provider_network}' network")
+            LOGGER.error(f"There is no '{public_network}' network")
             return
 
-        self._update_ips()
+        self.update_assigned_ips()
 
         if self.floating_ip:
             LOGGER.info(

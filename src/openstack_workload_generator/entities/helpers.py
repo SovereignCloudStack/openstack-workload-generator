@@ -23,6 +23,7 @@ class Config:
             'admin_vm_ssh_keypair_name': 'my_ssh_public_key',
             'project_ipv4_subnet': '192.168.200.0/24',
             'public_network': "public",
+            'number_of_floating_ips_per_project': 1,
             'vm_flavor': 'SCS-1L-1',
             'vm_image': 'Ubuntu 24.04',
             'vm_volume_size_gb': 10,
@@ -111,6 +112,10 @@ class Config:
     @staticmethod
     def get_public_network() -> str:
         return Config.get("public_network", "[a-zA-Z][a-zA-Z0-9]*")
+
+    @staticmethod
+    def get_number_of_floating_ips_per_project() -> int:
+        return int(Config.get("number_of_floating_ips_per_project", r"[1-9]\d*"))
 
     @staticmethod
     def get_admin_vm_password() -> str:
