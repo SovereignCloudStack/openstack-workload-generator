@@ -22,7 +22,7 @@ lint: deps
 .PHONY: lint
 
 type-check: deps
-	${activate} && ${python} -m mypy --no-color-output --pretty src
+	${activate} && ${python} -m mypy --no-color-output src
 .PHONY: type-check
 
 test: deps
