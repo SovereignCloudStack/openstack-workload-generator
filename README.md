@@ -26,6 +26,32 @@ basis for later automation.
 # Usage
 
 ```
+$ ./openstack_workload_generator --help
+usage: Create workloads on openstack installations [-h] [--log_level loglevel] [--os_cloud OS_CLOUD] [--ansible_inventory [ANSIBLE_INVENTORY]] [--config CONFIG]
+                                                   (--create_domains DOMAINNAME [DOMAINNAME ...] | --delete_domains DOMAINNAME [DOMAINNAME ...])
+                                                   (--create_projects PROJECTNAME [PROJECTNAME ...] | --delete_projects PROJECTNAME [PROJECTNAME ...])
+                                                   (--create_machines SERVERNAME [SERVERNAME ...] | --delete_machines SERVERNAME [SERVERNAME ...])
+
+options:
+  -h, --help            show this help message and exit
+  --log_level loglevel  The loglevel
+  --os_cloud OS_CLOUD   The openstack config to use, defaults to the value of the OS_CLOUD environment variable or "admin" if the variable is not set
+  --ansible_inventory [ANSIBLE_INVENTORY]
+                        Dump the created servers as an ansible inventory to the specified directory, adds a ssh proxy jump for the hosts without a floating ip
+  --config CONFIG       The config file for environment creation, define a path to the yaml file or a subpath in the profiles folder
+  --create_domains DOMAINNAME [DOMAINNAME ...]
+                        A list of domains to be created
+  --delete_domains DOMAINNAME [DOMAINNAME ...]
+                        A list of domains to be deleted, all child elements are recursively deleted
+  --create_projects PROJECTNAME [PROJECTNAME ...]
+                        A list of projects to be created in the created domains
+  --delete_projects PROJECTNAME [PROJECTNAME ...]
+                        A list of projects to be deleted in the created domains, all child elements are recursively deleted
+  --create_machines SERVERNAME [SERVERNAME ...]
+                        A list of vms to be created in the created domains
+  --delete_machines SERVERNAME [SERVERNAME ...]
+                        A list of vms to be deleted in the created projects
+
 ```
 
 # Testing Scenarios
