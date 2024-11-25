@@ -59,7 +59,7 @@ exclusive_group_domain.add_argument('--delete_domains', type=item_checker, nargs
                                     metavar="DOMAINNAME",
                                     help='A list of domains to be deleted, all child elements are recursively deleted')
 
-exclusive_group_project = parser.add_mutually_exclusive_group(required=True)
+exclusive_group_project = parser.add_mutually_exclusive_group(required=False)
 
 exclusive_group_project.add_argument('--create_projects', type=item_checker, nargs="+", default=None,
                                      metavar="PROJECTNAME",
@@ -70,7 +70,7 @@ exclusive_group_project.add_argument('--delete_projects', type=item_checker, nar
                                      help='A list of projects to be deleted in the created '
                                           'domains, all child elements are recursively deleted')
 
-exclusive_group_machines = parser.add_mutually_exclusive_group(required=True)
+exclusive_group_machines = parser.add_mutually_exclusive_group(required=False)
 exclusive_group_machines.add_argument('--create_machines', type=item_checker, nargs="+", default=None,
                                       metavar="SERVERNAME",
                                       help='A list of vms to be created in the created domains')
