@@ -10,15 +10,16 @@ from openstack.identity.v3.project import Project
 
 from .helpers import ProjectCache, Config
 from .machine import WorkloadGeneratorMachine
-from .user import WorkloadGeneratorTestUser
+from .user import WorkloadGeneratorUser
 from .network import WorkloadGeneratorNetwork
 
 LOGGER = logging.getLogger()
 
+
 class WorkloadGeneratorProject:
 
     def __init__(self, admin_conn: Connection, project_name: str, domain: Domain,
-                 user: WorkloadGeneratorTestUser):
+                 user: WorkloadGeneratorUser):
         self._admin_conn: Connection = admin_conn
         self._project_conn: Connection | None = None
         self.project_name: str = project_name
@@ -26,7 +27,7 @@ class WorkloadGeneratorProject:
         self.security_group_name_egress: str = f"egress-any-{project_name}"
         self.domain: Domain = domain
         self.ssh_proxy_jump: str | None = None
-        self.user: WorkloadGeneratorTestUser = user
+        self.user: WorkloadGeneratorUser = user
         self.obj: Project = self._admin_conn.identity.find_project(project_name, domain_id=self.domain.id)
         if self.obj:
             ProjectCache.add(self.obj.id, {"name": self.obj.name, "domain_id": self.domain.id})
@@ -54,6 +55,8 @@ class WorkloadGeneratorProject:
             username=self.user.user_name,
             password=self.user.user_password,
         )
+        if not self._project_conn:
+            raise RuntimeError(f"Unable to create a project connection {ProjectCache.ident_by_id(self.obj.id)}")
         return self._project_conn
 
     @staticmethod
@@ -70,23 +73,25 @@ class WorkloadGeneratorProject:
                       security_group_name_ingress: str,
                       security_group_name_egress: str,
                       ) -> dict[str, WorkloadGeneratorMachine]:
-        result = dict()
+        result: dict[str, WorkloadGeneratorMachine] = dict()
         if not obj:
             return result
 
         for server in conn.compute.servers(all_projects=True, project_id=obj.id):
             workload_server = WorkloadGeneratorMachine(conn, obj, server.name, security_group_name_ingress,
-                                                  security_group_name_egress)
+                                                       security_group_name_egress)
             workload_server.obj = server
             result[workload_server.machine_name] = workload_server
         return result
 
     def get_machines(self, machines: list[str]) -> list[WorkloadGeneratorMachine]:
+        result: list[WorkloadGeneratorMachine] = []
         if self.obj is None:
-            return []
+            return result
         for machine in machines:
             if machine in self.workload_machines:
-                yield self.workload_machines[machine]
+                result.append(self.workload_machines[machine])
+        return result
 
     def get_role_id_by_name(self, role_name) -> str:
         for role in self._admin_conn.identity.roles():
@@ -105,37 +110,37 @@ class WorkloadGeneratorProject:
             user=user_id, project=self.obj.id, role=self.get_role_id_by_name(role_name))
         LOGGER.info(f"Assigned global admin {role_name} to {user_id} for {ProjectCache.ident_by_id(self.obj.id)}")
 
-    def _set_quota(self, quota_type: str):
-        if quota_type == "compute_quotas":
+    def _set_quota(self, quota_category: str):
+        if quota_category == "compute_quotas":
             api_area = "compute"
             current_quota = self._admin_conn.compute.get_quota_set(self.obj.id)
-        elif quota_type == "block_storage_quotas":
+        elif quota_category == "block_storage_quotas":
             api_area = "volume"
             current_quota = self._admin_conn.volume.get_quota_set(self.obj.id)
-        elif quota_type == "network_quotas":
+        elif quota_category == "network_quotas":
             api_area = "network"
             current_quota = self._admin_conn.get_network_quotas(self.obj.id)
         else:
-            raise RuntimeError(f"Not implemented: {quota_type}")
+            raise RuntimeError(f"Not implemented: {quota_category}")
 
         # service_obj = getattr(self._admin_conn, api_area)
         # current_quota = service_obj.get_quota_set(self.obj.id)
-        LOGGER.debug(f"current quotas for {quota_type} : {current_quota}")
+        LOGGER.debug(f"current quotas for {quota_category} : {current_quota}")
 
         new_quota = {}
-        if quota_type in Config._config:
-            for key_name in Config._config[quota_type].keys():
-                try:
-                    current_value = getattr(current_quota, key_name)
-                except AttributeError:
-                    LOGGER.error(f"No such {api_area} quota field {key_name} in {current_quota}")
-                    sys.exit()
+        for key_name in Config.configured_quota_names(quota_category):
+            try:
+                current_value = getattr(current_quota, key_name)
+            except AttributeError:
+                LOGGER.error(f"No such {api_area} quota field {key_name} in {current_quota}")
+                sys.exit()
 
-                new_value = Config.quota(key_name, quota_type, str(getattr(current_quota, key_name)))
-                if current_value != new_value:
-                    LOGGER.info(f"New {api_area} quota for {ProjectCache.ident_by_id(self.obj.id)}"
-                                f": {key_name} : {current_value} -> {new_value}")
-                    new_quota[key_name] = new_value
+            new_value = Config.quota(key_name, quota_category, getattr(current_quota, key_name))
+            if current_value != new_value:
+                LOGGER.info(f"New {api_area} quota for {ProjectCache.ident_by_id(self.obj.id)}"
+                            f": {key_name} : {current_value} -> {new_value}")
+                new_quota[key_name] = new_value
+
         if len(new_quota):
             set_quota_method = getattr(self._admin_conn, f"set_{api_area}_quotas")
             set_quota_method(self.obj.id, **new_quota)
@@ -151,8 +156,9 @@ class WorkloadGeneratorProject:
     def create_and_get_project(self) -> Project:
         if self.obj:
             self.adapt_quota()
-            self.workload_network = WorkloadGeneratorNetwork(self._admin_conn, self.obj, self.security_group_name_ingress,
-                                                        self.security_group_name_egress)
+            self.workload_network = WorkloadGeneratorNetwork(self._admin_conn, self.obj,
+                                                             self.security_group_name_ingress,
+                                                             self.security_group_name_egress)
             self.workload_network.create_and_get_network_setup()
             return self.obj
 
@@ -171,7 +177,7 @@ class WorkloadGeneratorProject:
         self.assign_role_to_user_for_project("member")
 
         self.workload_network = WorkloadGeneratorNetwork(self.project_conn, self.obj, self.security_group_name_ingress,
-                                                    self.security_group_name_egress)
+                                                         self.security_group_name_egress)
         self.workload_network.create_and_get_network_setup()
 
         return self.obj
@@ -221,6 +227,10 @@ class WorkloadGeneratorProject:
             if machine_name not in self.workload_machines:
                 machine = WorkloadGeneratorMachine(self.project_conn, self.obj, machine_name,
                                                    self.security_group_name_ingress, self.security_group_name_egress)
+
+                if self.workload_network is None or self.workload_network.obj_network is None:
+                    raise RuntimeError("No Workload network object")
+
                 machine.create_or_get_server(self.workload_network.obj_network)
 
                 if machine.floating_ip:
@@ -236,7 +246,9 @@ class WorkloadGeneratorProject:
         self.close_connection()
 
     def dump_inventory_hosts(self, directory_location: str):
-        for workload_machine in self.workload_machines.values():
+        for name, workload_machine in self.workload_machines.items():
+            if workload_machine.obj is None:
+                raise RuntimeError(f"Invalid reference to server for {workload_machine.machine_name}")
 
             workload_machine.update_assigned_ips()
             data = {
@@ -263,7 +275,8 @@ class WorkloadGeneratorProject:
     def get_or_create_ssh_key(self):
         self.ssh_key = self.project_conn.compute.find_keypair(Config.get_admin_vm_ssh_keypair_name())
         if not self.ssh_key:
-            LOGGER.info(f"Create SSH keypair '{Config.get_admin_vm_ssh_keypair_name()} in {ProjectCache.ident_by_id(self.obj.id)}")
+            LOGGER.info(
+                f"Create SSH keypair '{Config.get_admin_vm_ssh_keypair_name()} in {ProjectCache.ident_by_id(self.obj.id)}")
             self.ssh_key = self.project_conn.compute.create_keypair(
                 name=Config.get_admin_vm_ssh_keypair_name(),
                 public_key=Config.get_admin_vm_ssh_key(),

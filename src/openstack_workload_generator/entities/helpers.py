@@ -15,80 +15,71 @@ LOGGER = logging.getLogger()
 
 
 class Config:
-    _config: dict[str, str | dict[str, str]] = \
+    _config: dict[str, str | dict[str, str] | None] = \
         {
-            'admin_domain_password': None,
-            'admin_vm_password': None,
-            'admin_vm_ssh_key': None,
+            'admin_domain_password': "",
+            'admin_vm_password': "",
+            'admin_vm_ssh_key': "",
             'admin_vm_ssh_keypair_name': 'my_ssh_public_key',
             'project_ipv4_subnet': '192.168.200.0/24',
             'public_network': "public",
-            'number_of_floating_ips_per_project': 1,
+            'number_of_floating_ips_per_project': "1",
             'vm_flavor': 'SCS-1L-1',
             'vm_image': 'Ubuntu 24.04',
-            'vm_volume_size_gb': 10,
+            'vm_volume_size_gb': "10",
             'cloud_init_extra_script': """#!/bin/bash\necho "HELLO WORLD"; date > READY; whoami >> READY""",
-            'wait_for_server_timeout': 300,
+            'wait_for_server_timeout': "300",
         }
 
-    _file: str = None
+    _file: str | None = None
 
     @staticmethod
-    def get(key: str, regex: str = ".+",
-            multi_line: bool = False, parent_key: str | None = None, default: str | list[str] | None = None) \
-            -> str | list[ str]:
-        lines = [default]
-        try:
-            if parent_key:
-                lines = str(Config._config[parent_key][key]).splitlines()
-            else:
-                lines = str(Config._config[key]).splitlines()
-        except KeyError:
-            LOGGER.info(f"config does not contain : {parent_key or 'ROOT'} -> {key}, using >>>{default}<<<")
-            if lines is None:
-                sys.exit(1)
-
-        if len(lines) > 1 and multi_line is False:
-            LOGGER.error(f"{key}='{Config._config[key]}' contains multiple lines")
+    def get(key: str, regex: str = ".+", multi_line: bool = False) -> str:
+        if key not in Config._config:
+            LOGGER.error(f"{key} not in config")
             sys.exit(1)
 
-        for line in lines:
+        values: list[str] = []
+        if multi_line:
+            values = str(Config._config[key]).splitlines()
+        else:
+            values.append(str(Config._config[key]))
+
+        for value in values:
             matcher = re.compile(regex, re.MULTILINE | re.DOTALL)
-            if not matcher.fullmatch(str(line)):
-                LOGGER.error(f"{key} : >>>{line}<<< : does not match to regex >>>{regex}<<<")
+            if not matcher.fullmatch(value):
+                LOGGER.error(f"{key} : >>>{value}<<< : does not match to regex >>>{regex}<<<")
                 sys.exit(1)
 
-        if not multi_line:
-            return str(lines[0])
+        if len(values) > 1:
+            return "\n".join(values)
         else:
-            return [str(val) for val in lines]
+            return values[0]
 
     @staticmethod
     def load_config(config_file: str):
-            potential_profile_file = \
-                str(os.path.realpath(
-                    os.path.dirname(os.path.realpath(__file__))) + f"/../../../profiles/{config_file}")
+        potential_profile_file = \
+            str(os.path.realpath(
+                os.path.dirname(os.path.realpath(__file__))) + f"/../../../profiles/{config_file}")
 
-            if os.path.exists(config_file):
-                Config._file = config_file
-            elif not str(config_file).startswith("/") and os.path.exists(potential_profile_file):
-                Config._file = potential_profile_file
-            else:
-                LOGGER.error(f"Cannot find a profile at {config_file} or {potential_profile_file}")
-                sys.exit(1)
+        if os.path.exists(config_file):
+            Config._file = config_file
+        elif not str(config_file).startswith("/") and os.path.exists(potential_profile_file):
+            Config._file = potential_profile_file
+        else:
+            LOGGER.error(f"Cannot find a profile at {config_file} or {potential_profile_file}")
+            sys.exit(1)
 
-            Config._file = os.path.realpath(Config._file)
+        Config._file = os.path.realpath(Config._file)
 
-            try:
-                LOGGER.info(f"Reading {Config._file}")
-                with open(str(Config._file), 'r') as file_fd:
-                    Config._config.update(yaml.safe_load(file_fd))
+        try:
+            LOGGER.info(f"Reading {Config._file}")
+            with open(str(Config._file), 'r') as file_fd:
+                Config._config.update(yaml.safe_load(file_fd))
 
-            except Exception as e:
-                LOGGER.error(f"Unable to read configuration: {e}")
-                sys.exit(1)
-
-
+        except Exception as e:
+            LOGGER.error(f"Unable to read configuration: {e}")
+            sys.exit(1)
 
     @staticmethod
     def check_config(cls):
@@ -100,7 +91,7 @@ class Config:
             if quota_type not in Config._config:
                 continue
             for key_name, value in Config._config[quota_type].keys():
-                Config.quota(key_name,quota_type,"1")
+                Config.quota(key_name, quota_type, 1)
 
     @staticmethod
     def show_effective_config():
@@ -109,6 +100,7 @@ class Config:
             "The effective configuration from %s : \n>>>\n%s\n<<<" % (
                 Config._file, pformat(Config._config, indent=2, compact=False))
         )
+
     @staticmethod
     def get_public_network() -> str:
         return Config.get("public_network", "[a-zA-Z][a-zA-Z0-9]*")
@@ -151,15 +143,32 @@ class Config:
 
     @staticmethod
     def get_admin_vm_ssh_key() -> str:
-        return "\n".join(Config.get("admin_vm_ssh_key", r"ssh-\S+\s\S+\s\S+", multi_line=True))
+        return Config.get("admin_vm_ssh_key", r"ssh-\S+\s\S+\s\S+", multi_line=True)
 
     @staticmethod
     def get_admin_domain_password() -> str:
         return Config.get("admin_domain_password", regex=r".{5,}")
 
     @staticmethod
-    def quota(quota_name: str, quota_type: str, default_value: str) -> int:
-        return int(Config.get(quota_name, regex=f"\d+", parent_key=quota_type, default=default_value))
+    def configured_quota_names(quota_category: str) -> list[str]:
+        if quota_category in Config._config:
+            value = Config._config[quota_category]
+            if isinstance(value, dict):
+                return list(value.keys())
+        return []
+
+    @staticmethod
+    def quota(quota_name: str, quota_category: str, default_value: int) -> int:
+        if quota_category in Config._config:
+            value = Config._config.get(quota_name, default_value)
+            if isinstance(value, int):
+                return value
+            else:
+                LOGGER.error(f"Quota {quota_category} -> {quota_name} is not an integer")
+                sys.exit(1)
+        else:
+            return default_value
+
 
 class DomainCache:
     _domains: dict[str, str] = dict()
@@ -187,7 +196,7 @@ class ProjectCache:
         return f"project '{project}' in {domain}"
 
     @staticmethod
-    def add(project_id: str, data: dict[str,str]):
+    def add(project_id: str, data: dict[str, str]):
         ProjectCache.PROJECT_CACHE[project_id] = data
 
 

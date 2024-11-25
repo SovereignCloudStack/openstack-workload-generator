@@ -1,17 +1,28 @@
 #!/usr/bin/env python3
 
+import sys
+import os
 import argparse
 import logging
-import os
-import sys
 import time
 
-from entities.helpers import setup_logging, cloud_checker, item_checker
 from openstack.connection import Connection
 from openstack.config import loader
 
-from entities.helpers import Config
+#$ make type-check
+#source venv/bin/activate && python3 -m mypy --no-color-output --pretty src
+#src/openstack_workload_generator/__main__.py:12: error: Cannot find implementation or library stub for module named "entities"  [import-not-found]
+#    from entities import WorkloadGeneratorDomain
+#    ^
+#src/openstack_workload_generator/__main__.py:13: error: Cannot find implementation or library stub for module named "entities.helpers"  [import-not-found]
+#    from entities.helpers import setup_logging, cloud_checker, item_checker, Config
+#    ^
+#src/openstack_workload_generator/__main__.py:13: note: See https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-imports
+#Found 2 errors in 1 file (checked 9 source files)
+#make: *** [Makefile:25: type-check] Error 1
+
 from entities import WorkloadGeneratorDomain
+from entities.helpers import setup_logging, cloud_checker, item_checker, Config
 
 LOGGER = logging.getLogger()
 
@@ -48,21 +59,22 @@ exclusive_group_domain.add_argument('--delete_domains', type=item_checker, nargs
 exclusive_group_project = parser.add_mutually_exclusive_group(required=True)
 
 exclusive_group_project.add_argument('--create_projects', type=item_checker, nargs="+", default=None,
-                    metavar="PROJECTNAME",
-                    help='A list of projects to be created in the created domains')
+                                     metavar="PROJECTNAME",
+                                     help='A list of projects to be created in the created domains')
 
 exclusive_group_project.add_argument('--delete_projects', type=item_checker, nargs="+", default=None,
-                    metavar="PROJECTNAME",
-                    help='A list of projects to be deleted in the created domains, all child elements are recursively deleted')
+                                     metavar="PROJECTNAME",
+                                     help='A list of projects to be deleted in the created '
+                                          'domains, all child elements are recursively deleted')
 
 exclusive_group_machines = parser.add_mutually_exclusive_group(required=True)
 exclusive_group_machines.add_argument('--create_machines', type=item_checker, nargs="+", default=None,
-                    metavar="SERVERNAME",
-                    help='A list of vms to be created in the created domains')
+                                      metavar="SERVERNAME",
+                                      help='A list of vms to be created in the created domains')
 
 exclusive_group_machines.add_argument('--delete_machines', type=item_checker, nargs="+", default=None,
-                    metavar="SERVERNAME",
-                    help='A list of vms to be deleted in the created projects')
+                                      metavar="SERVERNAME",
+                                      help='A list of vms to be deleted in the created projects')
 
 args = parser.parse_args()
 
@@ -76,6 +88,7 @@ def establish_connection():
     config = loader.OpenStackConfig()
     cloud_config = config.get_one(args.os_cloud)
     return Connection(config=cloud_config)
+
 
 time_start = time.time()
 
@@ -102,7 +115,7 @@ if args.create_domains:
                         workload_project.dump_inventory_hosts(args.ansible_inventory)
                 elif args.delete_machines:
                     for machine_obj in workload_project.get_machines(args.delete_machines):
-                          machine_obj.delete_machine()
+                        machine_obj.delete_machine()
         sys.exit(0)
     elif args.delete_projects:
         conn = establish_connection()
