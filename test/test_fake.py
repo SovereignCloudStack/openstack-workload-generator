@@ -1,4 +1,4 @@
 
 
 def test_fake():
-    True
+    assert 2 > 0
