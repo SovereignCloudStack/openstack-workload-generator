@@ -4,11 +4,12 @@ from openstack.connection import Connection
 from openstack.identity.v3.domain import Domain
 from openstack.identity.v3.user import User
 
-from .helpers import Config,DomainCache
+from .helpers import Config, DomainCache
 
 LOGGER = logging.getLogger()
 
-class WorkloadGeneratorTestUser:
+
+class WorkloadGeneratorUser:
 
     def __init__(self, conn: Connection, user_name: str, domain: Domain):
         self.conn = conn
@@ -19,7 +20,8 @@ class WorkloadGeneratorTestUser:
 
     def assign_role_to_user(self, role_name: str):
         self.conn.identity.assign_project_role_to_user(self.obj.id, self.domain.id, self.get_role_id_by_name(role_name))
-        LOGGER.info(f"Assigned role '{role_name}' to user '{self.obj.name}' in {DomainCache.ident_by_id(self.domain.id)}")
+        LOGGER.info(
+            f"Assigned role '{role_name}' to user '{self.obj.name}' in {DomainCache.ident_by_id(self.domain.id)}")
 
     def create_and_get_user(self) -> User:
 

@@ -6,9 +6,10 @@ from openstack.connection import Connection
 from openstack.identity.v3.domain import Domain
 from .project import WorkloadGeneratorProject
 
-from .user import WorkloadGeneratorTestUser
+from .user import WorkloadGeneratorUser
 
 LOGGER = logging.getLogger()
+
 
 class WorkloadGeneratorDomain:
 
@@ -17,7 +18,7 @@ class WorkloadGeneratorDomain:
         self.domain_name = domain_name
         self.obj: Domain = self.conn.identity.find_domain(domain_name)
         if self.obj:
-            DomainCache.add(self.obj.id,self.obj.name)
+            DomainCache.add(self.obj.id, self.obj.name)
         self.workload_user = WorkloadGeneratorDomain._get_user(conn, domain_name, self.obj)
         self.workload_projects: dict[str, WorkloadGeneratorProject] = WorkloadGeneratorDomain._get_projects(
             conn, self.obj, self.workload_user)
@@ -26,10 +27,10 @@ class WorkloadGeneratorDomain:
     def _get_user(conn: Connection, domain_name: str, obj: Domain):
         if not obj:
             return None
-        return WorkloadGeneratorTestUser(conn, f"{domain_name}-admin", obj)
+        return WorkloadGeneratorUser(conn, f"{domain_name}-admin", obj)
 
     @staticmethod
-    def _get_projects(conn: Connection, domain: Domain | None, user: WorkloadGeneratorTestUser | None) \
+    def _get_projects(conn: Connection, domain: Domain | None, user: WorkloadGeneratorUser | None) \
             -> dict[str, WorkloadGeneratorProject]:
         if not domain or not user:
             return dict()
@@ -58,12 +59,15 @@ class WorkloadGeneratorDomain:
         return domain
 
     def get_projects(self, projects: list[str]) -> list[WorkloadGeneratorProject]:
+
+        result: list[WorkloadGeneratorProject] = []
         if self.obj is None:
-            return []
+            return result
 
         for project in projects:
             if project in self.workload_projects:
-                yield self.workload_projects[project]
+                result.append(self.workload_projects[project])
+        return result
 
     def delete_domain(self):
         if self.obj is None:

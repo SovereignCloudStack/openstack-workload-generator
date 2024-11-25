@@ -12,6 +12,7 @@ from .helpers import Config, ProjectCache
 
 LOGGER = logging.getLogger()
 
+
 class WorkloadGeneratorNetwork:
 
     def __init__(self, conn: Connection, project: Project,
@@ -43,7 +44,7 @@ class WorkloadGeneratorNetwork:
         return None
 
     @staticmethod
-    def _find_router(name, conn: Connection, project: Project) -> Network | None:
+    def _find_router(name, conn: Connection, project: Project) -> Router | None:
         routers = [router for router in conn.network.routers(name=name, project_id=project.id)]
         if len(routers) == 0:
             return None
@@ -63,7 +64,7 @@ class WorkloadGeneratorNetwork:
             raise RuntimeError(f"More the one network with the name {name} in {project.name}")
 
     @staticmethod
-    def _find_subnet(name, conn, project) -> Network | None:
+    def _find_subnet(name, conn, project) -> Subnet | None:
         subnet = [network for network in conn.network.subnets(name=name, project_id=project.id)]
         if len(subnet) == 0:
             return None
@@ -94,6 +95,9 @@ class WorkloadGeneratorNetwork:
             name=self.router_name,
             admin_state_up=True
         )
+        if not self.obj_router:
+            raise RuntimeError(f"Unable to create Router '{self.router_name}'")
+
         LOGGER.info(f"Router '{self.obj_router.name}' created with ID: {self.obj_router.id}")
         self.conn.network.update_router(self.obj_router, external_gateway_info={
             'network_id': public_network.id
@@ -113,6 +117,9 @@ class WorkloadGeneratorNetwork:
             project_id=self.project.id,
             mtu=1342
         )
+        if not self.obj_network:
+            raise RuntimeError(f"Unable to create network {self.network_name}")
+
         LOGGER.info(
             f"Created network {self.obj_network.name}/{self.obj_network.id} in {self.project.name}/{self.project.id}")
         return self.obj_network
@@ -120,6 +127,9 @@ class WorkloadGeneratorNetwork:
     def create_and_get_subnet(self) -> Subnet:
         if self.obj_subnet:
             return self.obj_subnet
+
+        if not self.obj_network:
+            raise RuntimeError("No network object exists")
 
         self.obj_subnet = self.conn.network.create_subnet(
             network_id=self.obj_network.id,
@@ -130,6 +140,10 @@ class WorkloadGeneratorNetwork:
             enable_dhcp=True,
             dns_nameservers=["8.8.8.8", "9.9.9.9"]
         )
+
+        if not self.obj_subnet:
+            raise RuntimeError(f"No subnet created {self.network_name}")
+
         LOGGER.info(
             f"Created subnet {self.obj_subnet.name}/{self.obj_subnet.id} in {self.project.name}/{self.project.id}")
 
@@ -183,6 +197,10 @@ class WorkloadGeneratorNetwork:
             name=self.security_group_name_ingress,
             description="Security group to allow SSH access to instances"
         )
+
+        if not self.obj_ingress_security_group:
+            raise RuntimeError("No ingress security group was created")
+
         self.conn.network.create_security_group_rule(
             security_group_id=self.obj_ingress_security_group.id,
             direction='ingress',
@@ -212,6 +230,10 @@ class WorkloadGeneratorNetwork:
             name=self.security_group_name_egress,
             description="Security group to allow outgoing access"
         )
+
+        if not self.obj_egress_security_group:
+            raise RuntimeError("No ingress security group was created")
+
         self.conn.network.create_security_group_rule(
             security_group_id=self.obj_egress_security_group.id,
             direction='egress',

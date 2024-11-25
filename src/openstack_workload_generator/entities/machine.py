@@ -10,6 +10,7 @@ from .helpers import Config, ProjectCache
 
 LOGGER = logging.getLogger()
 
+
 class WorkloadGeneratorMachine:
 
     def __init__(self, conn: Connection, project: Project, machine_name: str,
@@ -55,7 +56,8 @@ class WorkloadGeneratorMachine:
     def create_or_get_server(self, network: Network):
 
         if self.obj:
-            LOGGER.info(f"Server {self.obj.name}/{self.obj.id} in {ProjectCache.ident_by_id(self.obj.project_id)} already exists")
+            LOGGER.info(
+                f"Server {self.obj.name}/{self.obj.id} in {ProjectCache.ident_by_id(self.obj.project_id)} already exists")
             return
 
         # https://docs.openstack.org/openstacksdk/latest/user/resources/compute/v2/server.html#openstack.compute.v2.server.Server
@@ -80,7 +82,10 @@ class WorkloadGeneratorMachine:
             ],
             key_name=Config.get_admin_vm_ssh_keypair_name(),
         )
-        LOGGER.info(f"Created server {self.obj.name}/{self.obj.id} in {ProjectCache.ident_by_id(network.project_id)}")
+        if self.obj:
+            LOGGER.info(f"Created server {self.obj.name}/{self.obj.id} in {ProjectCache.ident_by_id(network.project_id)}")
+        else:
+            raise RuntimeError(f"Unable to create server {self.machine_name} in {ProjectCache.ident_by_id(network.project_id)}")
 
     @staticmethod
     def _get_user_script() -> str:
