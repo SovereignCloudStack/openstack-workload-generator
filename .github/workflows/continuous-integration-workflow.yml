@@ -1,0 +1,23 @@
+name: CI Workflow
+on:
+  push:
+    branches:
+      - '**' # Run on commits to any branch
+jobs:
+  build:
+    name: CI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          ref: refs/heads/main
+      - name: Deps
+        run: make deps
+      - name: Type test
+        run: make test
+      - name: Type check
+        run: make type-check
+      - name: Lint
+        run: make lint
