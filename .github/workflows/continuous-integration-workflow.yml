@@ -9,10 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-          ref: refs/heads/main
+        uses: actions/checkout@v3
       - name: Deps
         run: make deps
       - name: Type test
