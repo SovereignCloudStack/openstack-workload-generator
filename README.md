@@ -75,7 +75,10 @@ options:
 ### Example output of the creation process
 
 ```bash
-$ ./openstack_workload_generator --create_domains smoketest1 --create_projects smoketest-project1 --create_machines smoketest-testvm1
+$ ./openstack_workload_generator \
+    --create_domains smoketest1 \
+    --create_projects smoketest-project1 \
+    --create_machines smoketest-testvm1
 2024-11-22 11:16:22 - INFO - helpers.py:69 - The effective configuration from /home/marc/src/github/osba/scs/openstack-workload-generator/src/openstack_workload_generator/entities/../../../profiles/default.yaml : 
 >>>
 { 'admin_domain_password': 'yolobanana',
