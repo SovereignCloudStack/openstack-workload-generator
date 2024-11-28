@@ -90,8 +90,8 @@ class Config:
         for quota_type in ["compute_quotas", "block_storage_quotas", "network_quotas"]:
             if quota_type not in Config._config:
                 continue
-            for key_name, value in Config._config[quota_type].keys():
-                Config.quota(key_name, quota_type, 1)
+            for key_name in Config._config[quota_type].keys():
+                Config.quota(key_name, quota_type, 0)
 
     @staticmethod
     def show_effective_config():
