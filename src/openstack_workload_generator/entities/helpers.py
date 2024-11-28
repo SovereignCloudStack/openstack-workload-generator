@@ -97,8 +97,10 @@ class Config:
     def show_effective_config():
         Config.check_config(Config)
         LOGGER.info(
-            "The effective configuration from %s : \n>>>\n%s\n<<<" % (
-                Config._file, pformat(Config._config, indent=2, compact=False))
+            "The effective configuration from %s : \n>>>\n---\n%s\n<<<" % (
+                Config._file,
+                yaml.dump(Config._config, default_flow_style=False, width=10000),
+            )
         )
 
     @staticmethod

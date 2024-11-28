@@ -215,7 +215,7 @@ class WorkloadGeneratorProject:
             self._admin_conn.network.delete_security_group(sg.id)
         ##########################################################################################
 
-    def get_and_create_machines(self, machines: list[str], wait_for_machines: False):
+    def get_and_create_machines(self, machines: list[str], wait_for_machines: bool):
         if "none" in machines:
             LOGGER.warning("Not creating a virtual machine, because 'none' was in the list")
             self.close_connection()
@@ -231,7 +231,7 @@ class WorkloadGeneratorProject:
                 if self.workload_network is None or self.workload_network.obj_network is None:
                     raise RuntimeError("No Workload network object")
 
-                machine.create_or_get_server(self.workload_network.obj_network)
+                machine.create_or_get_server(self.workload_network.obj_network, wait_for_machines)
 
                 if machine.floating_ip:
                     self.ssh_proxy_jump = machine.floating_ip
@@ -267,7 +267,7 @@ class WorkloadGeneratorProject:
             if self.ssh_proxy_jump and not workload_machine.floating_ip:
                 data["ansible_ssh_common_args"] = f"-o ProxyJump={self.ssh_proxy_jump} "
 
-            base_dir = f"{directory_location}/{data['domain']}-{data['project']}-{data['hostname']}"
+            base_dir = f"{directory_location}/{data['openstack']['domain']}-{data['openstack']['project']}-{data['hostname']}"
             filename = f'{base_dir}/data.yml'
             os.makedirs(base_dir, exist_ok=True)
             with open(filename, 'w') as file:
