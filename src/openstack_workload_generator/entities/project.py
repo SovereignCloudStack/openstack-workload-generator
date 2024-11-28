@@ -215,7 +215,7 @@ class WorkloadGeneratorProject:
             self._admin_conn.network.delete_security_group(sg.id)
         ##########################################################################################
 
-    def get_and_create_machines(self, machines: list[str]):
+    def get_and_create_machines(self, machines: list[str], wait_for_machines: False):
         if "none" in machines:
             LOGGER.warning("Not creating a virtual machine, because 'none' was in the list")
             self.close_connection()
@@ -252,12 +252,14 @@ class WorkloadGeneratorProject:
 
             workload_machine.update_assigned_ips()
             data = {
-                "id": workload_machine.obj.id,
-                "status": workload_machine.obj.status,
-                "hypervisor": workload_machine.obj['OS-EXT-SRV-ATTR:hypervisor_hostname'],
+                "openstack": {
+                    "machine_id": workload_machine.obj.id,
+                    "machine_status": workload_machine.obj.status,
+                    "hypervisor": workload_machine.obj['OS-EXT-SRV-ATTR:hypervisor_hostname'],
+                    "domain": self.domain.name,
+                    "project": workload_machine.project.name,
+                },
                 "hostname": workload_machine.machine_name,
-                "project": workload_machine.project.name,
-                "domain": self.domain.name,
                 "ansible_host": workload_machine.floating_ip or workload_machine.internal_ip,
                 "internal_ip": workload_machine.internal_ip,
             }
