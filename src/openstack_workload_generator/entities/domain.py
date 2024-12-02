@@ -98,6 +98,6 @@ class WorkloadGeneratorDomain:
             self.workload_projects[project_name] = project
             project.close_connection()
 
-    def create_and_get_machines(self, machines: list[str]):
+    def create_and_get_machines(self, machines: list[str], wait_for_machines: bool):
         for project in self.workload_projects.values():
-            project.get_and_create_machines(machines)
+            project.get_and_create_machines(machines, wait_for_machines)

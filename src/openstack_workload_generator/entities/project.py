@@ -251,7 +251,11 @@ class WorkloadGeneratorProject:
                 raise RuntimeError(f"Invalid reference to server for {workload_machine.machine_name}")
 
             workload_machine.update_assigned_ips()
-            data = {
+
+            if not workload_machine.internal_ip:
+                raise RuntimeError(f"Unable to get associated ip address for {workload_machine.machine_name}")
+
+            data: dict[str, str | dict[str, str]] = {
                 "openstack": {
                     "machine_id": workload_machine.obj.id,
                     "machine_status": workload_machine.obj.status,
@@ -267,7 +271,8 @@ class WorkloadGeneratorProject:
             if self.ssh_proxy_jump and not workload_machine.floating_ip:
                 data["ansible_ssh_common_args"] = f"-o ProxyJump={self.ssh_proxy_jump} "
 
-            base_dir = f"{directory_location}/{data['openstack']['domain']}-{data['openstack']['project']}-{data['hostname']}"
+            base_dir = f"{directory_location}/{self.domain.name}-{workload_machine.project.name}-{workload_machine.machine_name}"
+
             filename = f'{base_dir}/data.yml'
             os.makedirs(base_dir, exist_ok=True)
             with open(filename, 'w') as file:
