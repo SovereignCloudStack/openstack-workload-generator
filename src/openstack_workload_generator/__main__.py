@@ -45,9 +45,8 @@ parser.add_argument('--ansible_inventory', type=str, nargs="?",
                          "adds a ssh proxy jump for the hosts without a floating ip")
 
 parser.add_argument('--wait_for_machines', action="store_true",
-                             help="Wait for every machine to be created "
-                                  "(normally the provisioning only waits for machines which use floating ips)")
-
+                    help="Wait for every machine to be created "
+                         "(normally the provisioning only waits for machines which use floating ips)")
 
 parser.add_argument('--config', type=str,
                     default="default.yaml",
