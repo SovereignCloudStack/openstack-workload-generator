@@ -134,7 +134,7 @@ if args.create_domains:
                         machine_obj.delete_machine()
         if args.clouds_yaml:
             LOGGER.info(f"Creating a a clouds yaml : {args.clouds_yaml}")
-            clouds_yaml_data = { "clouds": clouds_yaml_data }
+            clouds_yaml_data = {"clouds": clouds_yaml_data}
             with open(args.clouds_yaml, 'w') as file:
                 yaml.dump(clouds_yaml_data, file, default_flow_style=False, explicit_start=True)
         sys.exit(0)
