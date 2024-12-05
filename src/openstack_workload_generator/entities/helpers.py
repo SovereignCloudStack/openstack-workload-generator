@@ -2,7 +2,6 @@ import inspect
 import logging
 import os
 import sys
-from pprint import pformat
 from typing import Tuple
 import coloredlogs
 
@@ -23,6 +22,7 @@ class Config:
             'admin_vm_ssh_keypair_name': 'my_ssh_public_key',
             'project_ipv4_subnet': '192.168.200.0/24',
             'public_network': "public",
+            'network_mtu': '1500',
             'number_of_floating_ips_per_project': "1",
             'vm_flavor': 'SCS-1L-1',
             'vm_image': 'Ubuntu 24.04',
@@ -90,15 +90,17 @@ class Config:
         for quota_type in ["compute_quotas", "block_storage_quotas", "network_quotas"]:
             if quota_type not in Config._config:
                 continue
-            for key_name, value in Config._config[quota_type].keys():
-                Config.quota(key_name, quota_type, 1)
+            for key_name in Config._config[quota_type].keys():
+                Config.quota(key_name, quota_type, 0)
 
     @staticmethod
     def show_effective_config():
         Config.check_config(Config)
         LOGGER.info(
-            "The effective configuration from %s : \n>>>\n%s\n<<<" % (
-                Config._file, pformat(Config._config, indent=2, compact=False))
+            "The effective configuration from %s : \n>>>\n---\n%s\n<<<" % (
+                Config._file,
+                yaml.dump(Config._config, default_flow_style=False, width=10000),
+            )
         )
 
     @staticmethod
@@ -168,6 +170,10 @@ class Config:
                 sys.exit(1)
         else:
             return default_value
+
+    @staticmethod
+    def get_network_mtu():
+        return int(Config.get("network_mtu", regex=r"\d+"))
 
 
 class DomainCache:

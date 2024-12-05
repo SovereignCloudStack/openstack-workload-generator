@@ -44,6 +44,10 @@ parser.add_argument('--ansible_inventory', type=str, nargs="?",
                     help="Dump the created servers as an ansible inventory to the specified directory, "
                          "adds a ssh proxy jump for the hosts without a floating ip")
 
+parser.add_argument('--wait_for_machines', action="store_true",
+                    help="Wait for every machine to be created "
+                         "(normally the provisioning only waits for machines which use floating ips)")
+
 parser.add_argument('--config', type=str,
                     default="default.yaml",
                     help='The config file for environment creation, define a path to the'
@@ -113,7 +117,7 @@ if args.create_domains:
         for workload_domain in workload_domains.values():
             for workload_project in workload_domain.get_projects(args.create_projects):
                 if args.create_machines:
-                    workload_project.get_and_create_machines(args.create_machines)
+                    workload_project.get_and_create_machines(args.create_machines, args.wait_for_machines)
                     if args.ansible_inventory:
                         workload_project.dump_inventory_hosts(args.ansible_inventory)
                 elif args.delete_machines:

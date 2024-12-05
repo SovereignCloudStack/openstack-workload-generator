@@ -53,7 +53,7 @@ class WorkloadGeneratorMachine:
         self.conn.compute.wait_for_delete(self.obj)
         LOGGER.warning(f"Machine {self.machine_name} in {self.obj.project_id} is deleted now")
 
-    def create_or_get_server(self, network: Network):
+    def create_or_get_server(self, network: Network, wait_for_machine: bool):
 
         if self.obj:
             LOGGER.info(
@@ -82,6 +82,8 @@ class WorkloadGeneratorMachine:
             ],
             key_name=Config.get_admin_vm_ssh_keypair_name(),
         )
+        if wait_for_machine:
+            self.wait_for_server()
         if self.obj:
             LOGGER.info(f"Created server {self.obj.name}/{self.obj.id} in {ProjectCache.ident_by_id(network.project_id)}")
         else:

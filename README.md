@@ -38,6 +38,7 @@ options:
   --os_cloud OS_CLOUD   The openstack config to use, defaults to the value of the OS_CLOUD environment variable or "admin" if the variable is not set
   --ansible_inventory [ANSIBLE_INVENTORY]
                         Dump the created servers as an ansible inventory to the specified directory, adds a ssh proxy jump for the hosts without a floating ip
+  --wait_for_machines   Wait for every machine to be created (normally the provisioning only waits for machines which use floating ips)
   --config CONFIG       The config file for environment creation, define a path to the yaml file or a subpath in the profiles folder
   --create_domains DOMAINNAME [DOMAINNAME ...]
                         A list of domains to be created
@@ -75,69 +76,130 @@ options:
 ### Example output of the creation process
 
 ```bash
-$ ./openstack_workload_generator --create_domains smoketest1 --create_projects smoketest-project1 --create_machines smoketest-testvm1
-2024-11-22 11:16:22 - INFO - helpers.py:69 - The effective configuration from /home/marc/src/github/osba/scs/openstack-workload-generator/src/openstack_workload_generator/entities/../../../profiles/default.yaml : 
+$ ./openstack_workload_generator\
+    --create_domains smoketest1\
+    --create_projects smoketest-project1\
+    --create_machines smoketest-testvm1\
+    --ansible_inventory /tmp/stresstest-inventory
+2024-11-28 15:51:15 - INFO - helpers.py:76 - Reading /home/marc/src/github/osba/scs/openstack-workload-generator/profiles/default.yaml
+2024-11-28 15:51:15 - INFO - helpers.py:99 - The effective configuration from /home/marc/src/github/osba/scs/openstack-workload-generator/profiles/default.yaml : 
 >>>
-{ 'admin_domain_password': 'yolobanana',
-  'admin_vm_password': 'yolobanana',
-  'admin_vm_ssh_key': 'ssh-ed25519 '
-                      'AAAAC3NzaC1lZDI1NTE5AAAAIACLmNpHitBkZGVbWAFxZjUATNvLjSktAKwokFIQ9Z1k '
-                      'schoechlin@osb-alliance.com',
-  'admin_vm_ssh_keypair_name': 'my_ssh_public_key',
-  'project_ipv4_subnet': '192.168.200.0/24',
-  'vm_flavor': 'SCS-1L-1',
-  'vm_image': 'Ubuntu 24.04',
-  'vm_volume_size_gb': 10}
+---
+admin_domain_password: yolobanana
+admin_vm_password: yolobanana
+admin_vm_ssh_key: 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIACLmNpHitBkZGVbWAFxZjUATNvLjSktAKwokFIQ9Z1k schoechlin@osb-alliance.com
+
+  ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDyw2z/C+5YugYNXQXbeop0AcOjmWZCvcmci/vOAboO8 schoone@osb-alliance.com
+
+  ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHsMKOr3TEolg4+4hny/zBe4kLcjzkm+vkc932498fVD kipke@osb-alliance.com
+
+  ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILa+/eL5ZM3AWKgm1h4/EFU9hOaSKqaoldHmNeg0qG46 kipke@osb-alliance.com
+
+  ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC2wE2xiuO+i3qmDvu8kCCKX7U7H1diOICbWmR2UrKIxqWgcfWMQsT3WclotJKuVJuKIWyFD6ZNwwLuvC3RxVSqhCiWjqxg3jzJBj7/C1O3IYyLGTUl/x7Cky530lf/aj4wrwt3Ketk/4QNwgget2nCvOy0S2NDCJ3rL6oIUjdJekvRrFf9IbWeX8fqYYCoh1cYJWto1XYPnhMDAB/lqtjN1ssurLSKoJg/bUT7q/KkIvvA/BOR2NMqS0aGx+bKhdkeB22V/t75Ct8ymoCYk9+MTC9i/QX20Fi7835/W7Gl18J8NiO9ebaWyYbsxZ5klWXQa5EiLLBDZ82OR88G+0FjXp1Z3VG6FcpdYpW7sxrT21HEvWOnQACZCdlzwyBJ31id/LjDRhJU6BmZm0Sa9EOJNL8XVOUUzuoa0XL1mIVTsmLpUwqLSfw6Ditb+q4afFi0iYMe3JKOt+JmftvBgeQCjNUsCzk+Ny2j6dZKv2aeF5LOQZGRM3HzG39Gkir3q1zdWmCl4lc3QQBfr5ZcdAp+wQMFSgJAudKffO9kdDVNoyjgih7rD3E+JjJdhY9//WQEEBm2vfEqm7qqEQUAELd0JBCivJmOhUVH0rGbTrnkTBtLR4Au40W5aYaNQJ7+U3hTRrvpycSC1pUU3Wq3OXJd2FRDgKQJljQcpBw4V9j8GQ== Operator
+
+  '
+admin_vm_ssh_keypair_name: my_ssh_public_key
+cloud_init_extra_script: '#!/bin/bash
+
+  echo "HELLO WORLD"; date > READY; whoami >> READY'
+number_of_floating_ips_per_project: '1'
+project_ipv4_subnet: 192.168.200.0/24
+public_network: public
+vm_flavor: SCS-1L-1
+vm_image: Ubuntu 24.04
+vm_volume_size_gb: 10
+wait_for_server_timeout: '300'
+
 <<<
-2024-11-22 11:16:22 - INFO - __main__.py:80 - Creating 1 domains, with 1 projects, with 1 machines in summary
-2024-11-22 11:16:23 - INFO - domain.py:51 - Created domain 'smoketest1/4a6a49520d0848c9a1a8925b64742efd'
-2024-11-22 11:16:24 - INFO - user.py:22 - Assigned role 'manager' to user 'smoketest1-admin' in domain 'smoketest1/4a6a49520d0848c9a1a8925b64742efd'
-2024-11-22 11:16:24 - INFO - user.py:37 - Created user smoketest1-admin / e8c1427ec25547dd9d8eab6a942b0805 with password yolobanana in domain 'smoketest1/4a6a49520d0848c9a1a8925b64742efd'
-2024-11-22 11:16:25 - INFO - project.py:158 - Created project 'smoketest-project1/ed5d39e2b5084565991a8c537eae46ae' in domain 'smoketest1/4a6a49520d0848c9a1a8925b64742efd'
-2024-11-22 11:16:25 - INFO - project.py:136 - Compute quotas for project 'smoketest-project1/ed5d39e2b5084565991a8c537eae46ae' in domain 'smoketest1/4a6a49520d0848c9a1a8925b64742efd' not changed
-2024-11-22 11:16:26 - INFO - project.py:136 - Volume quotas for project 'smoketest-project1/ed5d39e2b5084565991a8c537eae46ae' in domain 'smoketest1/4a6a49520d0848c9a1a8925b64742efd' not changed
-2024-11-22 11:16:26 - INFO - project.py:136 - Network quotas for project 'smoketest-project1/ed5d39e2b5084565991a8c537eae46ae' in domain 'smoketest1/4a6a49520d0848c9a1a8925b64742efd' not changed
-2024-11-22 11:16:26 - INFO - project.py:92 - Assigned manager to e8c1427ec25547dd9d8eab6a942b0805 for project 'smoketest-project1/ed5d39e2b5084565991a8c537eae46ae' in domain 'smoketest1/4a6a49520d0848c9a1a8925b64742efd'
-2024-11-22 11:16:26 - INFO - project.py:92 - Assigned load-balancer_member to e8c1427ec25547dd9d8eab6a942b0805 for project 'smoketest-project1/ed5d39e2b5084565991a8c537eae46ae' in domain 'smoketest1/4a6a49520d0848c9a1a8925b64742efd'
-2024-11-22 11:16:26 - INFO - project.py:92 - Assigned member to e8c1427ec25547dd9d8eab6a942b0805 for project 'smoketest-project1/ed5d39e2b5084565991a8c537eae46ae' in domain 'smoketest1/4a6a49520d0848c9a1a8925b64742efd'
-2024-11-22 11:16:26 - INFO - project.py:49 - Establishing a connection for project 'smoketest-project1/ed5d39e2b5084565991a8c537eae46ae' in domain 'smoketest1/4a6a49520d0848c9a1a8925b64742efd'
-2024-11-22 11:16:29 - INFO - network.py:116 - Created network localnet-smoketest-project1/a5e92142-9842-476e-8bd7-d19b10ddd603 in smoketest-project1/ed5d39e2b5084565991a8c537eae46ae
-2024-11-22 11:16:31 - INFO - network.py:133 - Created subnet localnet-smoketest-project1/5d9ebc28-87a2-4622-9882-7629fce8c93d in smoketest-project1/ed5d39e2b5084565991a8c537eae46ae
-2024-11-22 11:16:32 - INFO - network.py:97 - Router 'localrouter-smoketest-project1' created with ID: c90fb0af-54c9-42b3-94bc-c9fca9de1a0b
-2024-11-22 11:16:35 - INFO - network.py:101 - Router 'localrouter-smoketest-project1' gateway set to external network: public
-2024-11-22 11:16:43 - INFO - network.py:103 - Subnet 'localnet-smoketest-project1' added to router 'localrouter-smoketest-project1' as an interface
-2024-11-22 11:16:43 - INFO - network.py:180 - Creating ingress security group ingress-ssh-smoketest-project1 for project 'smoketest-project1/ed5d39e2b5084565991a8c537eae46ae' in domain 'smoketest1/4a6a49520d0848c9a1a8925b64742efd'
-2024-11-22 11:16:44 - INFO - network.py:209 - Creating egress security group egress-any-smoketest-project1 for project smoketest-project1/4a6a49520d0848c9a1a8925b64742efd
-2024-11-22 11:16:46 - INFO - project.py:241 - Create SSH keypair 'my_ssh_public_key in project 'smoketest-project1/ed5d39e2b5084565991a8c537eae46ae' in domain 'smoketest1/4a6a49520d0848c9a1a8925b64742efd'
-2024-11-22 11:16:46 - INFO - project.py:248 - Closing connection for project 'smoketest-project1/ed5d39e2b5084565991a8c537eae46ae' in domain 'smoketest1/4a6a49520d0848c9a1a8925b64742efd'
-2024-11-22 11:16:46 - INFO - project.py:49 - Establishing a connection for project 'smoketest-project1/ed5d39e2b5084565991a8c537eae46ae' in domain 'smoketest1/4a6a49520d0848c9a1a8925b64742efd'
-2024-11-22 11:16:48 - INFO - helpers.py:32 - config does not contain : ROOT -> cloud_init_extra_script, using >>>#!/bin/bash
-echo "HELLO WORLD"; date > READY; whoami >> READY<<<
-2024-11-22 11:16:51 - INFO - machine.py:83 - Created server smoketest-testvm1/4196cd5f-b5e8-47cd-a496-6e63d268b506 in project 'smoketest-project1/ed5d39e2b5084565991a8c537eae46ae' in domain 'smoketest1/4a6a49520d0848c9a1a8925b64742efd'
-2024-11-22 11:16:51 - INFO - helpers.py:32 - config does not contain : ROOT -> public_network, using >>>public<<<
-2024-11-22 11:16:51 - INFO - machine.py:124 - Add floating ip smoketest-testvm1/4196cd5f-b5e8-47cd-a496-6e63d268b506 in project 'smoketest-project1/ed5d39e2b5084565991a8c537eae46ae' in domain 'smoketest1/4a6a49520d0848c9a1a8925b64742efd'
-2024-11-22 11:16:51 - INFO - helpers.py:32 - config does not contain : ROOT -> wait_for_server_timeout, using >>>300<<<
-2024-11-22 11:18:18 - INFO - project.py:248 - Closing connection for project 'smoketest-project1/ed5d39e2b5084565991a8c537eae46ae' in domain 'smoketest1/4a6a49520d0848c9a1a8925b64742efd'
-2024-11-22 11:18:18 - INFO - __main__.py:101 - Execution finished after 1 minutes, item rate 0.6443141142527262/item
+2024-11-28 15:51:15 - INFO - domain.py:52 - Created domain 'smoketest1/c863af289ea04c35b9dabdd2f94d424e'
+2024-11-28 15:51:16 - INFO - user.py:23 - Assigned role 'manager' to user 'smoketest1-admin' in domain 'smoketest1/c863af289ea04c35b9dabdd2f94d424e'
+2024-11-28 15:51:16 - INFO - user.py:39 - Created user smoketest1-admin / 35caa86cc7ed467380e9755f12fd9115 with password yolobanana in domain 'smoketest1/c863af289ea04c35b9dabdd2f94d424e'
+2024-11-28 15:51:17 - INFO - project.py:172 - Created project 'smoketest-project1/7581b3ee38474353a9bcf09a2e2d6cff' in domain 'smoketest1/c863af289ea04c35b9dabdd2f94d424e'
+2024-11-28 15:51:17 - INFO - project.py:149 - Compute quotas for project 'smoketest-project1/7581b3ee38474353a9bcf09a2e2d6cff' in domain 'smoketest1/c863af289ea04c35b9dabdd2f94d424e' not changed
+2024-11-28 15:51:18 - INFO - project.py:149 - Volume quotas for project 'smoketest-project1/7581b3ee38474353a9bcf09a2e2d6cff' in domain 'smoketest1/c863af289ea04c35b9dabdd2f94d424e' not changed
+2024-11-28 15:51:18 - INFO - project.py:149 - Network quotas for project 'smoketest-project1/7581b3ee38474353a9bcf09a2e2d6cff' in domain 'smoketest1/c863af289ea04c35b9dabdd2f94d424e' not changed
+2024-11-28 15:51:18 - INFO - project.py:105 - Assigned manager to 35caa86cc7ed467380e9755f12fd9115 for project 'smoketest-project1/7581b3ee38474353a9bcf09a2e2d6cff' in domain 'smoketest1/c863af289ea04c35b9dabdd2f94d424e'
+2024-11-28 15:51:18 - INFO - project.py:105 - Assigned load-balancer_member to 35caa86cc7ed467380e9755f12fd9115 for project 'smoketest-project1/7581b3ee38474353a9bcf09a2e2d6cff' in domain 'smoketest1/c863af289ea04c35b9dabdd2f94d424e'
+2024-11-28 15:51:18 - INFO - project.py:105 - Assigned member to 35caa86cc7ed467380e9755f12fd9115 for project 'smoketest-project1/7581b3ee38474353a9bcf09a2e2d6cff' in domain 'smoketest1/c863af289ea04c35b9dabdd2f94d424e'
+2024-11-28 15:51:18 - INFO - project.py:51 - Establishing a connection for project 'smoketest-project1/7581b3ee38474353a9bcf09a2e2d6cff' in domain 'smoketest1/c863af289ea04c35b9dabdd2f94d424e'
+2024-11-28 15:51:21 - INFO - network.py:123 - Created network localnet-smoketest-project1/0676385f-bafd-48b5-bc33-e1162db46601 in smoketest-project1/7581b3ee38474353a9bcf09a2e2d6cff
+2024-11-28 15:51:23 - INFO - network.py:147 - Created subnet localnet-smoketest-project1/72ffa9ac-2110-4d13-97dc-d80cb0a4cb4c in smoketest-project1/7581b3ee38474353a9bcf09a2e2d6cff
+2024-11-28 15:51:24 - INFO - network.py:101 - Router 'localrouter-smoketest-project1' created with ID: f5394861-277b-4670-a93f-a8fc11bdd9bc
+2024-11-28 15:51:27 - INFO - network.py:105 - Router 'localrouter-smoketest-project1' gateway set to external network: public
+2024-11-28 15:51:31 - INFO - network.py:107 - Subnet 'localnet-smoketest-project1' added to router 'localrouter-smoketest-project1' as an interface
+2024-11-28 15:51:31 - INFO - network.py:194 - Creating ingress security group ingress-ssh-smoketest-project1 for project 'smoketest-project1/7581b3ee38474353a9bcf09a2e2d6cff' in domain 'smoketest1/c863af289ea04c35b9dabdd2f94d424e'
+2024-11-28 15:51:32 - INFO - network.py:227 - Creating egress security group egress-any-smoketest-project1 for project smoketest-project1/c863af289ea04c35b9dabdd2f94d424e
+2024-11-28 15:51:34 - INFO - project.py:280 - Create SSH keypair 'my_ssh_public_key in project 'smoketest-project1/7581b3ee38474353a9bcf09a2e2d6cff' in domain 'smoketest1/c863af289ea04c35b9dabdd2f94d424e'
+2024-11-28 15:51:34 - INFO - project.py:288 - Closing connection for project 'smoketest-project1/7581b3ee38474353a9bcf09a2e2d6cff' in domain 'smoketest1/c863af289ea04c35b9dabdd2f94d424e'
+2024-11-28 15:51:34 - INFO - project.py:51 - Establishing a connection for project 'smoketest-project1/7581b3ee38474353a9bcf09a2e2d6cff' in domain 'smoketest1/c863af289ea04c35b9dabdd2f94d424e'
+2024-11-28 15:51:39 - INFO - machine.py:88 - Created server smoketest-testvm1/0d688d7a-79b0-4206-9d99-fc191b425110 in project 'smoketest-project1/7581b3ee38474353a9bcf09a2e2d6cff' in domain 'smoketest1/c863af289ea04c35b9dabdd2f94d424e'
+2024-11-28 15:51:39 - INFO - machine.py:125 - Add floating ip smoketest-testvm1/0d688d7a-79b0-4206-9d99-fc191b425110 in project 'smoketest-project1/7581b3ee38474353a9bcf09a2e2d6cff' in domain 'smoketest1/c863af289ea04c35b9dabdd2f94d424e'
+2024-11-28 15:53:06 - INFO - project.py:288 - Closing connection for project 'smoketest-project1/7581b3ee38474353a9bcf09a2e2d6cff' in domain 'smoketest1/c863af289ea04c35b9dabdd2f94d424e'
+2024-11-28 15:53:06 - INFO - project.py:274 - Creating ansible_inventory_file /tmp/stresstest-inventory/smoketest1-smoketest-project1-smoketest-testvm1/data.yml for host smoketest-testvm1
+
+$ cat /tmp/stresstest-inventory/smoketest1-smoketest-project1-smoketest-testvm1/data.yml
+---
+ansible_host: 10.80.2.35
+hostname: smoketest-testvm1
+internal_ip: 192.168.200.222
+openstack:
+  domain: smoketest1
+  hypervisor: null
+  machine_id: 0d688d7a-79b0-4206-9d99-fc191b425110
+  machine_status: ACTIVE
+  project: smoketest-project1
+
 ```
 
 ### Example of the cleanup process
-```
-./openstack_workload_generator --delete_domains smoketest1
-2024-11-22 12:32:16 - WARNING - machine.py:48 - Deleting machine smoketest-testvm1 in project 'smoketest-project1/ed5d39e2b5084565991a8c537eae46ae' in domain 'smoketest1/4a6a49520d0848c9a1a8925b64742efd'
-2024-11-22 12:32:21 - WARNING - machine.py:53 - Machine smoketest-testvm1 in ed5d39e2b5084565991a8c537eae46ae is deleted now
-2024-11-22 12:32:25 - WARNING - network.py:146 - Removed interface from subnet: 5d9ebc28-87a2-4622-9882-7629fce8c93d
-2024-11-22 12:32:27 - WARNING - network.py:148 - Removed gateway from router c90fb0af-54c9-42b3-94bc-c9fca9de1a0b
-2024-11-22 12:32:27 - WARNING - network.py:150 - Deleted router c90fb0af-54c9-42b3-94bc-c9fca9de1a0b/localrouter-smoketest-project1
-2024-11-22 12:32:28 - WARNING - network.py:161 - Delete port 3168dba8-0735-47e5-84da-59f9d508b49a
-2024-11-22 12:32:29 - WARNING - network.py:167 - Delete subnet localnet-smoketest-project1 of project 'smoketest-project1/ed5d39e2b5084565991a8c537eae46ae' in domain 'smoketest1/4a6a49520d0848c9a1a8925b64742efd'
-2024-11-22 12:32:29 - WARNING - network.py:174 - Deleted network localnet-smoketest-project1 / a5e92142-9842-476e-8bd7-d19b10ddd603
-2024-11-22 12:32:29 - WARNING - project.py:183 - Cleanup of project 'smoketest-project1/ed5d39e2b5084565991a8c537eae46ae' in domain 'smoketest1/4a6a49520d0848c9a1a8925b64742efd'
-2024-11-22 12:32:29 - INFO - project.py:49 - Establishing a connection for project 'smoketest-project1/ed5d39e2b5084565991a8c537eae46ae' in domain 'smoketest1/4a6a49520d0848c9a1a8925b64742efd'
-2024-11-22 12:32:35 - WARNING - project.py:190 - Deleting project 'smoketest-project1/ed5d39e2b5084565991a8c537eae46ae' in domain 'smoketest1/4a6a49520d0848c9a1a8925b64742efd'
-2024-11-22 12:32:35 - WARNING - project.py:200 - Deleting security group: default (88ceab77-b2c7-4986-8463-a157fbafbcfc)
-2024-11-22 12:32:36 - WARNING - user.py:45 - Deleted user: smoketest1-admin / e8c1427ec25547dd9d8eab6a942b0805
-2024-11-22 12:32:36 - WARNING - domain.py:70 - Deleted domain 'smoketest1/4a6a49520d0848c9a1a8925b64742efd'
+
+```bash
+$ ./openstack_workload_generator --delete_domains smoketest1  
+2024-11-28 15:55:46 - INFO - helpers.py:76 - Reading /home/marc/src/github/osba/scs/openstack-workload-generator/profiles/default.yaml
+2024-11-28 15:55:46 - INFO - helpers.py:99 - The effective configuration from /home/marc/src/github/osba/scs/openstack-workload-generator/profiles/default.yaml : 
+>>>
+---
+admin_domain_password: yolobanana
+admin_vm_password: yolobanana
+admin_vm_ssh_key: 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIACLmNpHitBkZGVbWAFxZjUATNvLjSktAKwokFIQ9Z1k schoechlin@osb-alliance.com
+
+  ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDyw2z/C+5YugYNXQXbeop0AcOjmWZCvcmci/vOAboO8 schoone@osb-alliance.com
+
+  ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHsMKOr3TEolg4+4hny/zBe4kLcjzkm+vkc932498fVD kipke@osb-alliance.com
+
+  ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILa+/eL5ZM3AWKgm1h4/EFU9hOaSKqaoldHmNeg0qG46 kipke@osb-alliance.com
+
+  ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC2wE2xiuO+i3qmDvu8kCCKX7U7H1diOICbWmR2UrKIxqWgcfWMQsT3WclotJKuVJuKIWyFD6ZNwwLuvC3RxVSqhCiWjqxg3jzJBj7/C1O3IYyLGTUl/x7Cky530lf/aj4wrwt3Ketk/4QNwgget2nCvOy0S2NDCJ3rL6oIUjdJekvRrFf9IbWeX8fqYYCoh1cYJWto1XYPnhMDAB/lqtjN1ssurLSKoJg/bUT7q/KkIvvA/BOR2NMqS0aGx+bKhdkeB22V/t75Ct8ymoCYk9+MTC9i/QX20Fi7835/W7Gl18J8NiO9ebaWyYbsxZ5klWXQa5EiLLBDZ82OR88G+0FjXp1Z3VG6FcpdYpW7sxrT21HEvWOnQACZCdlzwyBJ31id/LjDRhJU6BmZm0Sa9EOJNL8XVOUUzuoa0XL1mIVTsmLpUwqLSfw6Ditb+q4afFi0iYMe3JKOt+JmftvBgeQCjNUsCzk+Ny2j6dZKv2aeF5LOQZGRM3HzG39Gkir3q1zdWmCl4lc3QQBfr5ZcdAp+wQMFSgJAudKffO9kdDVNoyjgih7rD3E+JjJdhY9//WQEEBm2vfEqm7qqEQUAELd0JBCivJmOhUVH0rGbTrnkTBtLR4Au40W5aYaNQJ7+U3hTRrvpycSC1pUU3Wq3OXJd2FRDgKQJljQcpBw4V9j8GQ== Operator
+
+  '
+admin_vm_ssh_keypair_name: my_ssh_public_key
+cloud_init_extra_script: '#!/bin/bash
+
+  echo "HELLO WORLD"; date > READY; whoami >> READY'
+number_of_floating_ips_per_project: '1'
+project_ipv4_subnet: 192.168.200.0/24
+public_network: public
+vm_flavor: SCS-1L-1
+vm_image: Ubuntu 24.04
+vm_volume_size_gb: 10
+wait_for_server_timeout: '300'
+
+<<<
+2024-11-28 15:55:49 - WARNING - machine.py:49 - Deleting machine smoketest-testvm1 in project 'smoketest-project1/7581b3ee38474353a9bcf09a2e2d6cff' in domain 'smoketest1/c863af289ea04c35b9dabdd2f94d424e'
+2024-11-28 15:55:53 - WARNING - machine.py:54 - Machine smoketest-testvm1 in 7581b3ee38474353a9bcf09a2e2d6cff is deleted now
+2024-11-28 15:55:58 - WARNING - network.py:160 - Removed interface from subnet: 72ffa9ac-2110-4d13-97dc-d80cb0a4cb4c
+2024-11-28 15:56:00 - WARNING - network.py:162 - Removed gateway from router f5394861-277b-4670-a93f-a8fc11bdd9bc
+2024-11-28 15:56:00 - WARNING - network.py:164 - Deleted router f5394861-277b-4670-a93f-a8fc11bdd9bc/localrouter-smoketest-project1
+2024-11-28 15:56:01 - WARNING - network.py:175 - Delete port 501ec7d8-63c5-4f60-9eac-bfe0ea844b36
+2024-11-28 15:56:01 - WARNING - network.py:181 - Delete subnet localnet-smoketest-project1 of project 'smoketest-project1/7581b3ee38474353a9bcf09a2e2d6cff' in domain 'smoketest1/c863af289ea04c35b9dabdd2f94d424e'
+2024-11-28 15:56:02 - WARNING - network.py:188 - Deleted network localnet-smoketest-project1 / 0676385f-bafd-48b5-bc33-e1162db46601
+2024-11-28 15:56:02 - WARNING - project.py:197 - Cleanup of project 'smoketest-project1/7581b3ee38474353a9bcf09a2e2d6cff' in domain 'smoketest1/c863af289ea04c35b9dabdd2f94d424e'
+2024-11-28 15:56:02 - INFO - project.py:51 - Establishing a connection for project 'smoketest-project1/7581b3ee38474353a9bcf09a2e2d6cff' in domain 'smoketest1/c863af289ea04c35b9dabdd2f94d424e'
+2024-11-28 15:56:08 - WARNING - project.py:204 - Deleting project 'smoketest-project1/7581b3ee38474353a9bcf09a2e2d6cff' in domain 'smoketest1/c863af289ea04c35b9dabdd2f94d424e'
+2024-11-28 15:56:08 - WARNING - project.py:214 - Deleting security group: default (06bda9d7-a678-475f-bc30-bf005c53b437)
+2024-11-28 15:56:10 - WARNING - user.py:47 - Deleted user: smoketest1-admin / 35caa86cc7ed467380e9755f12fd9115
+2024-11-28 15:56:10 - WARNING - domain.py:82 - Deleted domain 'smoketest1/c863af289ea04c35b9dabdd2f94d424e'
+
 ```
 
 ## Example usage: A tiny scenario

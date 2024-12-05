@@ -215,7 +215,7 @@ class WorkloadGeneratorProject:
             self._admin_conn.network.delete_security_group(sg.id)
         ##########################################################################################
 
-    def get_and_create_machines(self, machines: list[str]):
+    def get_and_create_machines(self, machines: list[str], wait_for_machines: bool):
         if "none" in machines:
             LOGGER.warning("Not creating a virtual machine, because 'none' was in the list")
             self.close_connection()
@@ -231,7 +231,7 @@ class WorkloadGeneratorProject:
                 if self.workload_network is None or self.workload_network.obj_network is None:
                     raise RuntimeError("No Workload network object")
 
-                machine.create_or_get_server(self.workload_network.obj_network)
+                machine.create_or_get_server(self.workload_network.obj_network, wait_for_machines)
 
                 if machine.floating_ip:
                     self.ssh_proxy_jump = machine.floating_ip
@@ -251,13 +251,19 @@ class WorkloadGeneratorProject:
                 raise RuntimeError(f"Invalid reference to server for {workload_machine.machine_name}")
 
             workload_machine.update_assigned_ips()
-            data = {
-                "id": workload_machine.obj.id,
-                "status": workload_machine.obj.status,
-                "hypervisor": workload_machine.obj['OS-EXT-SRV-ATTR:hypervisor_hostname'],
+
+            if not workload_machine.internal_ip:
+                raise RuntimeError(f"Unable to get associated ip address for {workload_machine.machine_name}")
+
+            data: dict[str, str | dict[str, str]] = {
+                "openstack": {
+                    "machine_id": workload_machine.obj.id,
+                    "machine_status": workload_machine.obj.status,
+                    "hypervisor": workload_machine.obj['OS-EXT-SRV-ATTR:hypervisor_hostname'],
+                    "domain": self.domain.name,
+                    "project": workload_machine.project.name,
+                },
                 "hostname": workload_machine.machine_name,
-                "project": workload_machine.project.name,
-                "domain": self.domain.name,
                 "ansible_host": workload_machine.floating_ip or workload_machine.internal_ip,
                 "internal_ip": workload_machine.internal_ip,
             }
@@ -265,7 +271,8 @@ class WorkloadGeneratorProject:
             if self.ssh_proxy_jump and not workload_machine.floating_ip:
                 data["ansible_ssh_common_args"] = f"-o ProxyJump={self.ssh_proxy_jump} "
 
-            base_dir = f"{directory_location}/{data['domain']}-{data['project']}-{data['hostname']}"
+            base_dir = f"{directory_location}/{self.domain.name}-{workload_machine.project.name}-{workload_machine.machine_name}"
+
             filename = f'{base_dir}/data.yml'
             os.makedirs(base_dir, exist_ok=True)
             with open(filename, 'w') as file:

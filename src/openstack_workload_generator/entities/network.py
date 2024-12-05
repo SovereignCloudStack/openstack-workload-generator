@@ -83,9 +83,9 @@ class WorkloadGeneratorNetwork:
         return network
 
     def create_and_get_router(self, subnet: Subnet) -> Router | None:
-        public_network = self.conn.network.find_network('public')
+        public_network = self.conn.network.find_network(Config.get_public_network())
         if not public_network:
-            LOGGER.error("There is no 'public' network")
+            LOGGER.error(f"There is no '{Config.get_public_network()}' network, not adding floating ips")
             return None
 
         if self.obj_router:
@@ -115,7 +115,7 @@ class WorkloadGeneratorNetwork:
         self.obj_network = self.conn.network.create_network(
             name=self.network_name,
             project_id=self.project.id,
-            mtu=1342
+            mtu=Config.get_network_mtu(),
         )
         if not self.obj_network:
             raise RuntimeError(f"Unable to create network {self.network_name}")
