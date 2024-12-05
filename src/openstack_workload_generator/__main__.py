@@ -5,7 +5,9 @@ import os
 import argparse
 import logging
 import time
+from typing import Any
 
+import yaml
 from openstack.connection import Connection
 from openstack.config import loader
 
@@ -43,6 +45,9 @@ parser.add_argument('--os_cloud', type=cloud_checker,
 parser.add_argument('--ansible_inventory', type=str, nargs="?",
                     help="Dump the created servers as an ansible inventory to the specified directory, "
                          "adds a ssh proxy jump for the hosts without a floating ip")
+
+parser.add_argument('--clouds_yaml', type=str, nargs="?",
+                    help="Generate a openstack clouds.yaml file")
 
 parser.add_argument('--wait_for_machines', action="store_true",
                     help="Wait for every machine to be created "
@@ -105,6 +110,7 @@ Config.show_effective_config()
 if args.create_domains:
     conn = establish_connection()
     workload_domains: dict[str, WorkloadGeneratorDomain] = dict()
+    clouds_yaml_data: dict[str, dict[str, Any]] = dict()
     for domain_name in args.create_domains:
         domain = WorkloadGeneratorDomain(conn, domain_name)
         domain.create_and_get_domain()
@@ -120,9 +126,16 @@ if args.create_domains:
                     workload_project.get_and_create_machines(args.create_machines, args.wait_for_machines)
                     if args.ansible_inventory:
                         workload_project.dump_inventory_hosts(args.ansible_inventory)
+                    if args.clouds_yaml:
+                        clouds_yaml_data[f"{workload_domain.domain_name}-{workload_project.project_name}"] \
+                            = workload_project.get_clouds_yaml_data()
                 elif args.delete_machines:
                     for machine_obj in workload_project.get_machines(args.delete_machines):
                         machine_obj.delete_machine()
+        if args.clouds_yaml:
+            LOGGER.info(f"Creating a a clouds yaml : {args.clouds_yaml}")
+            with open(args.clouds_yaml, 'w') as file:
+                yaml.dump(clouds_yaml_data, file, default_flow_style=False, explicit_start=True)
         sys.exit(0)
     elif args.delete_projects:
         conn = establish_connection()

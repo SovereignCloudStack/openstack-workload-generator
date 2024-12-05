@@ -294,3 +294,19 @@ class WorkloadGeneratorProject:
         if self._project_conn:
             self._project_conn.close()
             self._project_conn = None
+
+    def get_clouds_yaml_data(self) -> dict[str, str | dict[str, str]]:
+        data: dict[str, str | dict[str, str]] = {
+            "auth": {
+                "username": self.user.user_name,
+                "project_name": self.project_name,
+                "auth_url": self.project_conn.session.auth.auth_url,
+                "project_domain_name": self.domain.name,
+                "user_domain_name": self.domain.name,
+                "password": self.user.user_password,
+            },
+            "cacert": self.project_conn.verify,
+            "identity_api_version": "3",
+            "endpoint_type": "internalURL"
+        }
+        return data
