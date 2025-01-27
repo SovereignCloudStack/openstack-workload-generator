@@ -64,8 +64,8 @@ options:
     * with 1 project
     * assigned roles
     * which then each contain 1 server
-          * block storage volume
-          * first server has a floating ip
+       * block storage volume
+       * first server has a floating ip
     * one public SSH key
     * a network
     * a subnet
@@ -209,9 +209,9 @@ wait_for_server_timeout: '300'
     * each with 2 projects
     * assigned roles
     * which then each contain 2 servers
-          * block storage volume
-          * first server has a floating ip
-    * one public SSH key
+      * block storage volume
+      * first server has a floating ip
+    * public SSH key
     * a network
     * a subnet
     * a router
