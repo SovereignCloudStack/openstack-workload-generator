@@ -47,11 +47,15 @@ parser.add_argument('--ansible_inventory', type=str, nargs="?",
                          "adds a ssh proxy jump for the hosts without a floating ip")
 
 parser.add_argument('--clouds_yaml', type=str, nargs="?",
-                    help="Generate a openstack clouds.yaml file")
+                    help="Use a specific clouds.yaml file")
 
 parser.add_argument('--wait_for_machines', action="store_true",
                     help="Wait for every machine to be created "
                          "(normally the provisioning only waits for machines which use floating ips)")
+
+parser.add_argument('--generate_clouds_yaml', type=str, nargs="?",
+                    help="Generate a openstack clouds.yaml file")
+
 
 parser.add_argument('--config', type=str,
                     default="default.yaml",
@@ -97,10 +101,13 @@ setup_logging(args.log_level)
 
 
 def establish_connection():
-    config = loader.OpenStackConfig()
+    if args.clouds_yaml is None:
+        config = loader.OpenStackConfig()
+    else:
+        LOGGER.info(f"Loading connection configuration from {args.clouds_yaml}")
+        config = loader.OpenStackConfig(config_files=[args.clouds_yaml])
     cloud_config = config.get_one(args.os_cloud)
     return Connection(config=cloud_config)
-
 
 time_start = time.time()
 
@@ -132,10 +139,10 @@ if args.create_domains:
                 elif args.delete_machines:
                     for machine_obj in workload_project.get_machines(args.delete_machines):
                         machine_obj.delete_machine()
-        if args.clouds_yaml:
-            LOGGER.info(f"Creating a a clouds yaml : {args.clouds_yaml}")
+        if args.generate_clouds_yaml:
+            LOGGER.info(f"Creating a a clouds yaml : {args.generate_clouds_yaml}")
             clouds_yaml_data = {"clouds": clouds_yaml_data}
-            with open(args.clouds_yaml, 'w') as file:
+            with open(args.generate_clouds_yaml, 'w') as file:
                 yaml.dump(clouds_yaml_data, file, default_flow_style=False, explicit_start=True)
         sys.exit(0)
     elif args.delete_projects:

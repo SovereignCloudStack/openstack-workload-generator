@@ -305,8 +305,8 @@ class WorkloadGeneratorProject:
                 "user_domain_name": self.domain.name,
                 "password": self.user.user_password,
             },
+            "verify": Config.get_verify_ssl_certificate(),
             "cacert": self.project_conn.verify,
             "identity_api_version": "3",
-            "endpoint_type": "internalURL"
         }
         return data

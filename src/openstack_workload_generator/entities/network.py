@@ -112,10 +112,14 @@ class WorkloadGeneratorNetwork:
         if self.obj_network:
             return self.obj_network
 
+        mtu_size = Config.get_network_mtu()
+        if mtu_size == 0:
+            mtu = None
+
         self.obj_network = self.conn.network.create_network(
             name=self.network_name,
             project_id=self.project.id,
-            mtu=Config.get_network_mtu(),
+            mtu=mtu_size,
         )
         if not self.obj_network:
             raise RuntimeError(f"Unable to create network {self.network_name}")

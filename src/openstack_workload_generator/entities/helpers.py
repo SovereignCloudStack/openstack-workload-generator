@@ -22,11 +22,12 @@ class Config:
             'admin_vm_ssh_keypair_name': 'my_ssh_public_key',
             'project_ipv4_subnet': '192.168.200.0/24',
             'public_network': "public",
-            'network_mtu': '1500',
+            'network_mtu': '0',
             'number_of_floating_ips_per_project': "1",
             'vm_flavor': 'SCS-1L-1',
             'vm_image': 'Ubuntu 24.04',
             'vm_volume_size_gb': "10",
+            'verify_ssl_certificate': "false",
             'cloud_init_extra_script': """#!/bin/bash\necho "HELLO WORLD"; date > READY; whoami >> READY""",
             'wait_for_server_timeout': "300",
         }
@@ -152,6 +153,14 @@ class Config:
         return Config.get("admin_domain_password", regex=r".{5,}")
 
     @staticmethod
+    def get_verify_ssl_certificate() ->bool:
+        value = Config.get("verify_ssl_certificate", regex=r"true|false|True|False")
+        if value.lower() == "false":
+            return False
+        else:
+            return True
+
+    @staticmethod
     def configured_quota_names(quota_category: str) -> list[str]:
         if quota_category in Config._config:
             value = Config._config[quota_category]
@@ -221,7 +230,7 @@ def setup_logging(log_level: str) -> Tuple[logging.Logger, str]:
 
 
 def cloud_checker(value: str) -> str:
-    if not re.fullmatch("[a-zA-Z0-9]+", value):
+    if not re.fullmatch("[a-zA-Z0-9-]+", value):
         raise argparse.ArgumentTypeError('specify a value for os_cloud')
     return value
 
