@@ -19,9 +19,12 @@ class WorkloadGeneratorDomain:
         self.obj: Domain = self.conn.identity.find_domain(domain_name)
         if self.obj:
             DomainCache.add(self.obj.id, self.obj.name)
-        self.workload_user = WorkloadGeneratorDomain._get_user(conn, domain_name, self.obj)
-        self.workload_projects: dict[str, WorkloadGeneratorProject] = WorkloadGeneratorDomain._get_projects(
-            conn, self.obj, self.workload_user)
+        self.workload_user = WorkloadGeneratorDomain._get_user(
+            conn, domain_name, self.obj
+        )
+        self.workload_projects: dict[str, WorkloadGeneratorProject] = (
+            WorkloadGeneratorDomain._get_projects(conn, self.obj, self.workload_user)
+        )
 
     @staticmethod
     def _get_user(conn: Connection, domain_name: str, obj: Domain):
@@ -30,13 +33,16 @@ class WorkloadGeneratorDomain:
         return WorkloadGeneratorUser(conn, f"{domain_name}-admin", obj)
 
     @staticmethod
-    def _get_projects(conn: Connection, domain: Domain | None, user: WorkloadGeneratorUser | None) \
-            -> dict[str, WorkloadGeneratorProject]:
+    def _get_projects(
+        conn: Connection, domain: Domain | None, user: WorkloadGeneratorUser | None
+    ) -> dict[str, WorkloadGeneratorProject]:
         if not domain or not user:
             return dict()
         result: dict[str, WorkloadGeneratorProject] = dict()
         for project in conn.identity.projects(domain_id=domain.id):
-            result[project.name] = WorkloadGeneratorProject(conn, project.name, domain, user)
+            result[project.name] = WorkloadGeneratorProject(
+                conn, project.name, domain, user
+            )
         return result
 
     def create_and_get_domain(self) -> Domain:
@@ -44,14 +50,14 @@ class WorkloadGeneratorDomain:
             return self.obj
 
         self.obj = self.conn.identity.create_domain(
-            name=self.domain_name,
-            description="Automated creation",
-            enabled=True
+            name=self.domain_name, description="Automated creation", enabled=True
         )
         DomainCache.add(self.obj.id, self.obj.name)
         LOGGER.info(f"Created {DomainCache.ident_by_id(self.obj.id)}")
 
-        self.workload_user = WorkloadGeneratorDomain._get_user(self.conn, self.domain_name, self.obj)
+        self.workload_user = WorkloadGeneratorDomain._get_user(
+            self.conn, self.domain_name, self.obj
+        )
         return self.obj
 
     def disable_domain(self):
@@ -92,7 +98,9 @@ class WorkloadGeneratorDomain:
         for project_name in create_projects:
             if project_name in self.workload_projects:
                 continue
-            project = WorkloadGeneratorProject(self.conn, project_name, self.obj, self.workload_user)
+            project = WorkloadGeneratorProject(
+                self.conn, project_name, self.obj, self.workload_user
+            )
             project.create_and_get_project()
             project.get_or_create_ssh_key()
             self.workload_projects[project_name] = project

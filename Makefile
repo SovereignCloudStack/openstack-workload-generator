@@ -29,3 +29,6 @@ test: deps
 	${activate} && ${python} -m pytest test
 .PHONY: test
 
+black: deps
+	${activate} && ${python} -m black src
+.PHONY: black

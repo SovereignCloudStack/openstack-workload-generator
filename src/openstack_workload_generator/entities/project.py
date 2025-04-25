@@ -18,8 +18,13 @@ LOGGER = logging.getLogger()
 
 class WorkloadGeneratorProject:
 
-    def __init__(self, admin_conn: Connection, project_name: str, domain: Domain,
-                 user: WorkloadGeneratorUser):
+    def __init__(
+        self,
+        admin_conn: Connection,
+        project_name: str,
+        domain: Domain,
+        user: WorkloadGeneratorUser,
+    ):
         self._admin_conn: Connection = admin_conn
         self._project_conn: Connection | None = None
         self.project_name: str = project_name
@@ -28,19 +33,29 @@ class WorkloadGeneratorProject:
         self.domain: Domain = domain
         self.ssh_proxy_jump: str | None = None
         self.user: WorkloadGeneratorUser = user
-        self.obj: Project = self._admin_conn.identity.find_project(project_name, domain_id=self.domain.id)
+        self.obj: Project = self._admin_conn.identity.find_project(
+            project_name, domain_id=self.domain.id
+        )
         if self.obj:
-            ProjectCache.add(self.obj.id, {"name": self.obj.name, "domain_id": self.domain.id})
-        self.workload_network: WorkloadGeneratorNetwork | None = \
-            WorkloadGeneratorProject._get_network(admin_conn, self.obj,
-                                                  self.security_group_name_ingress,
-                                                  self.security_group_name_egress
-                                                  )
-        self.workload_machines: dict[str, WorkloadGeneratorMachine] = \
-            WorkloadGeneratorProject._get_machines(admin_conn, self.obj,
-                                                   self.security_group_name_ingress,
-                                                   self.security_group_name_egress
-                                                   )
+            ProjectCache.add(
+                self.obj.id, {"name": self.obj.name, "domain_id": self.domain.id}
+            )
+        self.workload_network: WorkloadGeneratorNetwork | None = (
+            WorkloadGeneratorProject._get_network(
+                admin_conn,
+                self.obj,
+                self.security_group_name_ingress,
+                self.security_group_name_egress,
+            )
+        )
+        self.workload_machines: dict[str, WorkloadGeneratorMachine] = (
+            WorkloadGeneratorProject._get_machines(
+                admin_conn,
+                self.obj,
+                self.security_group_name_ingress,
+                self.security_group_name_egress,
+            )
+        )
         self.ssh_key: Keypair | None = None
 
     @property
@@ -48,7 +63,9 @@ class WorkloadGeneratorProject:
         if self._project_conn:
             return self._project_conn
 
-        LOGGER.info(f"Establishing a connection for {ProjectCache.ident_by_id(self.obj.id)}")
+        LOGGER.info(
+            f"Establishing a connection for {ProjectCache.ident_by_id(self.obj.id)}"
+        )
         self._project_conn = self._admin_conn.connect_as(
             domain_id=self.obj.domain_id,
             project_id=self.obj.id,
@@ -56,30 +73,43 @@ class WorkloadGeneratorProject:
             password=self.user.user_password,
         )
         if not self._project_conn:
-            raise RuntimeError(f"Unable to create a project connection {ProjectCache.ident_by_id(self.obj.id)}")
+            raise RuntimeError(
+                f"Unable to create a project connection {ProjectCache.ident_by_id(self.obj.id)}"
+            )
         return self._project_conn
 
     @staticmethod
-    def _get_network(conn: Connection, obj: Project,
-                     security_group_name_ingress: str,
-                     security_group_name_egress: str,
-                     ) -> None | WorkloadGeneratorNetwork:
+    def _get_network(
+        conn: Connection,
+        obj: Project,
+        security_group_name_ingress: str,
+        security_group_name_egress: str,
+    ) -> None | WorkloadGeneratorNetwork:
         if not obj:
             return None
-        return WorkloadGeneratorNetwork(conn, obj, security_group_name_ingress, security_group_name_egress)
+        return WorkloadGeneratorNetwork(
+            conn, obj, security_group_name_ingress, security_group_name_egress
+        )
 
     @staticmethod
-    def _get_machines(conn: Connection, obj: Project,
-                      security_group_name_ingress: str,
-                      security_group_name_egress: str,
-                      ) -> dict[str, WorkloadGeneratorMachine]:
+    def _get_machines(
+        conn: Connection,
+        obj: Project,
+        security_group_name_ingress: str,
+        security_group_name_egress: str,
+    ) -> dict[str, WorkloadGeneratorMachine]:
         result: dict[str, WorkloadGeneratorMachine] = dict()
         if not obj:
             return result
 
         for server in conn.compute.servers(all_projects=True, project_id=obj.id):
-            workload_server = WorkloadGeneratorMachine(conn, obj, server.name, security_group_name_ingress,
-                                                       security_group_name_egress)
+            workload_server = WorkloadGeneratorMachine(
+                conn,
+                obj,
+                server.name,
+                security_group_name_ingress,
+                security_group_name_egress,
+            )
             workload_server.obj = server
             result[workload_server.machine_name] = workload_server
         return result
@@ -101,14 +131,22 @@ class WorkloadGeneratorProject:
 
     def assign_role_to_user_for_project(self, role_name: str):
         self._admin_conn.identity.assign_project_role_to_user(
-            user=self.user.obj.id, project=self.obj.id, role=self.get_role_id_by_name(role_name))
-        LOGGER.info(f"Assigned {role_name} to {self.user.obj.id} for {ProjectCache.ident_by_id(self.obj.id)}")
+            user=self.user.obj.id,
+            project=self.obj.id,
+            role=self.get_role_id_by_name(role_name),
+        )
+        LOGGER.info(
+            f"Assigned {role_name} to {self.user.obj.id} for {ProjectCache.ident_by_id(self.obj.id)}"
+        )
 
     def assign_role_to_global_admin_for_project(self, role_name: str):
         user_id = self._admin_conn.session.get_user_id()
         self._admin_conn.identity.assign_project_role_to_user(
-            user=user_id, project=self.obj.id, role=self.get_role_id_by_name(role_name))
-        LOGGER.info(f"Assigned global admin {role_name} to {user_id} for {ProjectCache.ident_by_id(self.obj.id)}")
+            user=user_id, project=self.obj.id, role=self.get_role_id_by_name(role_name)
+        )
+        LOGGER.info(
+            f"Assigned global admin {role_name} to {user_id} for {ProjectCache.ident_by_id(self.obj.id)}"
+        )
 
     def _set_quota(self, quota_category: str):
         if quota_category == "compute_quotas":
@@ -132,21 +170,31 @@ class WorkloadGeneratorProject:
             try:
                 current_value = getattr(current_quota, key_name)
             except AttributeError:
-                LOGGER.error(f"No such {api_area} quota field {key_name} in {current_quota}")
+                LOGGER.error(
+                    f"No such {api_area} quota field {key_name} in {current_quota}"
+                )
                 sys.exit()
 
-            new_value = Config.quota(key_name, quota_category, getattr(current_quota, key_name))
+            new_value = Config.quota(
+                key_name, quota_category, getattr(current_quota, key_name)
+            )
             if current_value != new_value:
-                LOGGER.info(f"New {api_area} quota for {ProjectCache.ident_by_id(self.obj.id)}"
-                            f": {key_name} : {current_value} -> {new_value}")
+                LOGGER.info(
+                    f"New {api_area} quota for {ProjectCache.ident_by_id(self.obj.id)}"
+                    f": {key_name} : {current_value} -> {new_value}"
+                )
                 new_quota[key_name] = new_value
 
         if len(new_quota):
             set_quota_method = getattr(self._admin_conn, f"set_{api_area}_quotas")
             set_quota_method(self.obj.id, **new_quota)
-            LOGGER.info(f"Configured {api_area} quotas for {ProjectCache.ident_by_id(self.obj.id)}")
+            LOGGER.info(
+                f"Configured {api_area} quotas for {ProjectCache.ident_by_id(self.obj.id)}"
+            )
         else:
-            LOGGER.info(f"{api_area.capitalize()} quotas for {ProjectCache.ident_by_id(self.obj.id)} not changed")
+            LOGGER.info(
+                f"{api_area.capitalize()} quotas for {ProjectCache.ident_by_id(self.obj.id)} not changed"
+            )
 
     def adapt_quota(self):
         self._set_quota("compute_quotas")
@@ -156,9 +204,12 @@ class WorkloadGeneratorProject:
     def create_and_get_project(self) -> Project:
         if self.obj:
             self.adapt_quota()
-            self.workload_network = WorkloadGeneratorNetwork(self._admin_conn, self.obj,
-                                                             self.security_group_name_ingress,
-                                                             self.security_group_name_egress)
+            self.workload_network = WorkloadGeneratorNetwork(
+                self._admin_conn,
+                self.obj,
+                self.security_group_name_ingress,
+                self.security_group_name_egress,
+            )
             self.workload_network.create_and_get_network_setup()
             return self.obj
 
@@ -166,9 +217,11 @@ class WorkloadGeneratorProject:
             name=self.project_name,
             domain_id=self.domain.id,
             description="Auto generated",
-            enabled=True
+            enabled=True,
         )
-        ProjectCache.add(self.obj.id, {"name": self.obj.name, "domain_id": self.obj.domain_id})
+        ProjectCache.add(
+            self.obj.id, {"name": self.obj.name, "domain_id": self.obj.domain_id}
+        )
         LOGGER.info(f"Created {ProjectCache.ident_by_id(self.obj.id)}")
         self.adapt_quota()
 
@@ -176,8 +229,12 @@ class WorkloadGeneratorProject:
         self.assign_role_to_user_for_project("load-balancer_member")
         self.assign_role_to_user_for_project("member")
 
-        self.workload_network = WorkloadGeneratorNetwork(self.project_conn, self.obj, self.security_group_name_ingress,
-                                                         self.security_group_name_egress)
+        self.workload_network = WorkloadGeneratorNetwork(
+            self.project_conn,
+            self.obj,
+            self.security_group_name_ingress,
+            self.security_group_name_egress,
+        )
         self.workload_network.create_and_get_network_setup()
 
         return self.obj
@@ -217,7 +274,9 @@ class WorkloadGeneratorProject:
 
     def get_and_create_machines(self, machines: list[str], wait_for_machines: bool):
         if "none" in machines:
-            LOGGER.warning("Not creating a virtual machine, because 'none' was in the list")
+            LOGGER.warning(
+                "Not creating a virtual machine, because 'none' was in the list"
+            )
             self.close_connection()
             return
 
@@ -225,13 +284,23 @@ class WorkloadGeneratorProject:
 
         for nr, machine_name in enumerate(sorted(machines)):
             if machine_name not in self.workload_machines:
-                machine = WorkloadGeneratorMachine(self.project_conn, self.obj, machine_name,
-                                                   self.security_group_name_ingress, self.security_group_name_egress)
+                machine = WorkloadGeneratorMachine(
+                    self.project_conn,
+                    self.obj,
+                    machine_name,
+                    self.security_group_name_ingress,
+                    self.security_group_name_egress,
+                )
 
-                if self.workload_network is None or self.workload_network.obj_network is None:
+                if (
+                    self.workload_network is None
+                    or self.workload_network.obj_network is None
+                ):
                     raise RuntimeError("No Workload network object")
 
-                machine.create_or_get_server(self.workload_network.obj_network, wait_for_machines)
+                machine.create_or_get_server(
+                    self.workload_network.obj_network, wait_for_machines
+                )
 
                 if machine.floating_ip:
                     self.ssh_proxy_jump = machine.floating_ip
@@ -248,23 +317,30 @@ class WorkloadGeneratorProject:
     def dump_inventory_hosts(self, directory_location: str):
         for name, workload_machine in self.workload_machines.items():
             if workload_machine.obj is None:
-                raise RuntimeError(f"Invalid reference to server for {workload_machine.machine_name}")
+                raise RuntimeError(
+                    f"Invalid reference to server for {workload_machine.machine_name}"
+                )
 
             workload_machine.update_assigned_ips()
 
             if not workload_machine.internal_ip:
-                raise RuntimeError(f"Unable to get associated ip address for {workload_machine.machine_name}")
+                raise RuntimeError(
+                    f"Unable to get associated ip address for {workload_machine.machine_name}"
+                )
 
             data: dict[str, str | dict[str, str]] = {
                 "openstack": {
                     "machine_id": workload_machine.obj.id,
                     "machine_status": workload_machine.obj.status,
-                    "hypervisor": workload_machine.obj['OS-EXT-SRV-ATTR:hypervisor_hostname'],
+                    "hypervisor": workload_machine.obj[
+                        "OS-EXT-SRV-ATTR:hypervisor_hostname"
+                    ],
                     "domain": self.domain.name,
                     "project": workload_machine.project.name,
                 },
                 "hostname": workload_machine.machine_name,
-                "ansible_host": workload_machine.floating_ip or workload_machine.internal_ip,
+                "ansible_host": workload_machine.floating_ip
+                or workload_machine.internal_ip,
                 "internal_ip": workload_machine.internal_ip,
             }
 
@@ -273,17 +349,22 @@ class WorkloadGeneratorProject:
 
             base_dir = f"{directory_location}/{self.domain.name}-{workload_machine.project.name}-{workload_machine.machine_name}"
 
-            filename = f'{base_dir}/data.yml'
+            filename = f"{base_dir}/data.yml"
             os.makedirs(base_dir, exist_ok=True)
-            with open(filename, 'w') as file:
-                LOGGER.info(f"Creating ansible_inventory_file {filename} for host {data['hostname']}")
+            with open(filename, "w") as file:
+                LOGGER.info(
+                    f"Creating ansible_inventory_file {filename} for host {data['hostname']}"
+                )
                 yaml.dump(data, file, default_flow_style=False, explicit_start=True)
 
     def get_or_create_ssh_key(self):
-        self.ssh_key = self.project_conn.compute.find_keypair(Config.get_admin_vm_ssh_keypair_name())
+        self.ssh_key = self.project_conn.compute.find_keypair(
+            Config.get_admin_vm_ssh_keypair_name()
+        )
         if not self.ssh_key:
             LOGGER.info(
-                f"Create SSH keypair '{Config.get_admin_vm_ssh_keypair_name()} in {ProjectCache.ident_by_id(self.obj.id)}")
+                f"Create SSH keypair '{Config.get_admin_vm_ssh_keypair_name()} in {ProjectCache.ident_by_id(self.obj.id)}"
+            )
             self.ssh_key = self.project_conn.compute.create_keypair(
                 name=Config.get_admin_vm_ssh_keypair_name(),
                 public_key=Config.get_admin_vm_ssh_key(),
@@ -295,8 +376,8 @@ class WorkloadGeneratorProject:
             self._project_conn.close()
             self._project_conn = None
 
-    def get_clouds_yaml_data(self) -> dict[str, str | dict[str, str]]:
-        data: dict[str, str | dict[str, str]] = {
+    def get_clouds_yaml_data(self) -> dict[str, str | bool | dict[str, str]]:
+        data: dict[str, bool | str | dict[str, str]] = {
             "auth": {
                 "username": self.user.user_name,
                 "project_name": self.project_name,
@@ -305,8 +386,8 @@ class WorkloadGeneratorProject:
                 "user_domain_name": self.domain.name,
                 "password": self.user.user_password,
             },
+            "verify": Config.get_verify_ssl_certificate(),
             "cacert": self.project_conn.verify,
             "identity_api_version": "3",
-            "endpoint_type": "internalURL"
         }
         return data

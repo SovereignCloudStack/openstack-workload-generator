@@ -14,22 +14,22 @@ LOGGER = logging.getLogger()
 
 
 class Config:
-    _config: dict[str, str | dict[str, str] | None] = \
-        {
-            'admin_domain_password': "",
-            'admin_vm_password': "",
-            'admin_vm_ssh_key': "",
-            'admin_vm_ssh_keypair_name': 'my_ssh_public_key',
-            'project_ipv4_subnet': '192.168.200.0/24',
-            'public_network': "public",
-            'network_mtu': '1500',
-            'number_of_floating_ips_per_project': "1",
-            'vm_flavor': 'SCS-1L-1',
-            'vm_image': 'Ubuntu 24.04',
-            'vm_volume_size_gb': "10",
-            'cloud_init_extra_script': """#!/bin/bash\necho "HELLO WORLD"; date > READY; whoami >> READY""",
-            'wait_for_server_timeout': "300",
-        }
+    _config: dict[str, str | dict[str, str] | None] = {
+        "admin_domain_password": "",
+        "admin_vm_password": "",
+        "admin_vm_ssh_key": "",
+        "admin_vm_ssh_keypair_name": "my_ssh_public_key",
+        "project_ipv4_subnet": "192.168.200.0/24",
+        "public_network": "public",
+        "network_mtu": "0",
+        "number_of_floating_ips_per_project": "1",
+        "vm_flavor": "SCS-1L-1",
+        "vm_image": "Ubuntu 24.04",
+        "vm_volume_size_gb": "10",
+        "verify_ssl_certificate": "false",
+        "cloud_init_extra_script": """#!/bin/bash\necho "HELLO WORLD"; date > READY; whoami >> READY""",
+        "wait_for_server_timeout": "300",
+    }
 
     _file: str | None = None
 
@@ -48,7 +48,9 @@ class Config:
         for value in values:
             matcher = re.compile(regex, re.MULTILINE | re.DOTALL)
             if not matcher.fullmatch(value):
-                LOGGER.error(f"{key} : >>>{value}<<< : does not match to regex >>>{regex}<<<")
+                LOGGER.error(
+                    f"{key} : >>>{value}<<< : does not match to regex >>>{regex}<<<"
+                )
                 sys.exit(1)
 
         if len(values) > 1:
@@ -58,23 +60,28 @@ class Config:
 
     @staticmethod
     def load_config(config_file: str):
-        potential_profile_file = \
-            str(os.path.realpath(
-                os.path.dirname(os.path.realpath(__file__))) + f"/../../../profiles/{config_file}")
+        potential_profile_file = str(
+            os.path.realpath(os.path.dirname(os.path.realpath(__file__)))
+            + f"/../../../profiles/{config_file}"
+        )
 
         if os.path.exists(config_file):
             Config._file = config_file
-        elif not str(config_file).startswith("/") and os.path.exists(potential_profile_file):
+        elif not str(config_file).startswith("/") and os.path.exists(
+            potential_profile_file
+        ):
             Config._file = potential_profile_file
         else:
-            LOGGER.error(f"Cannot find a profile at {config_file} or {potential_profile_file}")
+            LOGGER.error(
+                f"Cannot find a profile at {config_file} or {potential_profile_file}"
+            )
             sys.exit(1)
 
         Config._file = os.path.realpath(Config._file)
 
         try:
             LOGGER.info(f"Reading {Config._file}")
-            with open(str(Config._file), 'r') as file_fd:
+            with open(str(Config._file), "r") as file_fd:
                 Config._config.update(yaml.safe_load(file_fd))
 
         except Exception as e:
@@ -97,7 +104,8 @@ class Config:
     def show_effective_config():
         Config.check_config(Config)
         LOGGER.info(
-            "The effective configuration from %s : \n>>>\n---\n%s\n<<<" % (
+            "The effective configuration from %s : \n>>>\n---\n%s\n<<<"
+            % (
                 Config._file,
                 yaml.dump(Config._config, default_flow_style=False, width=10000),
             )
@@ -152,6 +160,14 @@ class Config:
         return Config.get("admin_domain_password", regex=r".{5,}")
 
     @staticmethod
+    def get_verify_ssl_certificate() -> bool:
+        value = Config.get("verify_ssl_certificate", regex=r"true|false|True|False")
+        if value.lower() == "false":
+            return False
+        else:
+            return True
+
+    @staticmethod
     def configured_quota_names(quota_category: str) -> list[str]:
         if quota_category in Config._config:
             value = Config._config[quota_category]
@@ -166,7 +182,9 @@ class Config:
             if isinstance(value, int):
                 return value
             else:
-                LOGGER.error(f"Quota {quota_category} -> {quota_name} is not an integer")
+                LOGGER.error(
+                    f"Quota {quota_category} -> {quota_name} is not an integer"
+                )
                 sys.exit(1)
         else:
             return default_value
@@ -198,7 +216,9 @@ class ProjectCache:
         if project_id not in ProjectCache.PROJECT_CACHE:
             raise RuntimeError(f"There is no project with id {project_id}")
         project = f'{ProjectCache.PROJECT_CACHE[project_id]["name"]}/{project_id}'
-        domain = DomainCache.ident_by_id(ProjectCache.PROJECT_CACHE[project_id]["domain_id"])
+        domain = DomainCache.ident_by_id(
+            ProjectCache.PROJECT_CACHE[project_id]["domain_id"]
+        )
         return f"project '{project}' in {domain}"
 
     @staticmethod
@@ -207,26 +227,26 @@ class ProjectCache:
 
 
 def setup_logging(log_level: str) -> Tuple[logging.Logger, str]:
-    log_format_string = \
-        '%(asctime)-10s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s'
+    log_format_string = (
+        "%(asctime)-10s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s"
+    )
     logger = logging.getLogger()
     log_file = "STDOUT"
-    logging.basicConfig(format=log_format_string,
-                        level=log_level)
+    logging.basicConfig(format=log_format_string, level=log_level)
 
-    coloredlogs.DEFAULT_FIELD_STYLES["levelname"] = {'bold': True, 'color': ''}
+    coloredlogs.DEFAULT_FIELD_STYLES["levelname"] = {"bold": True, "color": ""}
     coloredlogs.install(fmt=log_format_string, level=log_level.upper())
 
     return logger, log_file
 
 
 def cloud_checker(value: str) -> str:
-    if not re.fullmatch("[a-zA-Z0-9]+", value):
-        raise argparse.ArgumentTypeError('specify a value for os_cloud')
+    if not re.fullmatch("[a-zA-Z0-9-]+", value):
+        raise argparse.ArgumentTypeError("specify a value for os_cloud")
     return value
 
 
 def item_checker(value: str) -> str:
     if not re.fullmatch(r"[a-zA-Z0-9]+[a-zA-Z0-9\-]*[a-zA-Z0-9]+", value):
-        raise argparse.ArgumentTypeError('specify a valid name for an item')
+        raise argparse.ArgumentTypeError("specify a valid name for an item")
     return value
