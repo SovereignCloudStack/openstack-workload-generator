@@ -27,19 +27,34 @@ basis for later automation.
 
 ```
 $ ./openstack_workload_generator --help
-usage: Create workloads on openstack installations [-h] [--log_level loglevel] [--os_cloud OS_CLOUD] [--ansible_inventory [ANSIBLE_INVENTORY]] [--config CONFIG]
-                                                   (--create_domains DOMAINNAME [DOMAINNAME ...] | --delete_domains DOMAINNAME [DOMAINNAME ...])
-                                                   (--create_projects PROJECTNAME [PROJECTNAME ...] | --delete_projects PROJECTNAME [PROJECTNAME ...])
-                                                   (--create_machines SERVERNAME [SERVERNAME ...] | --delete_machines SERVERNAME [SERVERNAME ...])
+usage: Create workloads on openstack installations [-h] [--log_level loglevel] [--os_cloud OS_CLOUD]
+                                                   [--ansible_inventory [ANSIBLE_INVENTORY]]
+                                                   [--clouds_yaml [CLOUDS_YAML]] [--wait_for_machines]
+                                                   [--generate_clouds_yaml [GENERATE_CLOUDS_YAML]]
+                                                   [--config CONFIG]
+                                                   (--create_domains DOMAINNAME [DOMAINNAME ...] |
+                                                   --delete_domains DOMAINNAME [DOMAINNAME ...])
+                                                   [--create_projects PROJECTNAME [PROJECTNAME ...] |
+                                                   --delete_projects PROJECTNAME [PROJECTNAME ...]]
+                                                   [--create_machines SERVERNAME [SERVERNAME ...] |
+                                                   --delete_machines SERVERNAME [SERVERNAME ...]]
 
 options:
   -h, --help            show this help message and exit
   --log_level loglevel  The loglevel
-  --os_cloud OS_CLOUD   The openstack config to use, defaults to the value of the OS_CLOUD environment variable or "admin" if the variable is not set
+  --os_cloud OS_CLOUD   The openstack config to use, defaults to the value of the OS_CLOUD environment variable or
+                        "admin" if the variable is not set
   --ansible_inventory [ANSIBLE_INVENTORY]
-                        Dump the created servers as an ansible inventory to the specified directory, adds a ssh proxy jump for the hosts without a floating ip
-  --wait_for_machines   Wait for every machine to be created (normally the provisioning only waits for machines which use floating ips)
-  --config CONFIG       The config file for environment creation, define a path to the yaml file or a subpath in the profiles folder
+                        Dump the created servers as an ansible inventory to the specified directory, adds a ssh
+                        proxy jump for the hosts without a floating ip
+  --clouds_yaml [CLOUDS_YAML]
+                        Use a specific clouds.yaml file
+  --wait_for_machines   Wait for every machine to be created (normally the provisioning only waits for machines
+                        which use floating ips)
+  --generate_clouds_yaml [GENERATE_CLOUDS_YAML]
+                        Generate a openstack clouds.yaml file
+  --config CONFIG       The config file for environment creation, define a path to the yaml file or a subpath in
+                        the profiles folder
   --create_domains DOMAINNAME [DOMAINNAME ...]
                         A list of domains to be created
   --delete_domains DOMAINNAME [DOMAINNAME ...]
@@ -47,12 +62,12 @@ options:
   --create_projects PROJECTNAME [PROJECTNAME ...]
                         A list of projects to be created in the created domains
   --delete_projects PROJECTNAME [PROJECTNAME ...]
-                        A list of projects to be deleted in the created domains, all child elements are recursively deleted
+                        A list of projects to be deleted in the created domains, all child elements are
+                        recursively deleted
   --create_machines SERVERNAME [SERVERNAME ...]
                         A list of vms to be created in the created domains
   --delete_machines SERVERNAME [SERVERNAME ...]
                         A list of vms to be deleted in the created projects
-
 ```
 
 # Testing Scenarios
@@ -162,19 +177,13 @@ $ ./openstack_workload_generator --delete_domains smoketest1
 admin_domain_password: yolobanana
 admin_vm_password: yolobanana
 admin_vm_ssh_key: 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIACLmNpHitBkZGVbWAFxZjUATNvLjSktAKwokFIQ9Z1k schoechlin@osb-alliance.com
-
   ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDyw2z/C+5YugYNXQXbeop0AcOjmWZCvcmci/vOAboO8 schoone@osb-alliance.com
-
   ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHsMKOr3TEolg4+4hny/zBe4kLcjzkm+vkc932498fVD kipke@osb-alliance.com
-
   ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILa+/eL5ZM3AWKgm1h4/EFU9hOaSKqaoldHmNeg0qG46 kipke@osb-alliance.com
-
   ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC2wE2xiuO+i3qmDvu8kCCKX7U7H1diOICbWmR2UrKIxqWgcfWMQsT3WclotJKuVJuKIWyFD6ZNwwLuvC3RxVSqhCiWjqxg3jzJBj7/C1O3IYyLGTUl/x7Cky530lf/aj4wrwt3Ketk/4QNwgget2nCvOy0S2NDCJ3rL6oIUjdJekvRrFf9IbWeX8fqYYCoh1cYJWto1XYPnhMDAB/lqtjN1ssurLSKoJg/bUT7q/KkIvvA/BOR2NMqS0aGx+bKhdkeB22V/t75Ct8ymoCYk9+MTC9i/QX20Fi7835/W7Gl18J8NiO9ebaWyYbsxZ5klWXQa5EiLLBDZ82OR88G+0FjXp1Z3VG6FcpdYpW7sxrT21HEvWOnQACZCdlzwyBJ31id/LjDRhJU6BmZm0Sa9EOJNL8XVOUUzuoa0XL1mIVTsmLpUwqLSfw6Ditb+q4afFi0iYMe3JKOt+JmftvBgeQCjNUsCzk+Ny2j6dZKv2aeF5LOQZGRM3HzG39Gkir3q1zdWmCl4lc3QQBfr5ZcdAp+wQMFSgJAudKffO9kdDVNoyjgih7rD3E+JjJdhY9//WQEEBm2vfEqm7qqEQUAELd0JBCivJmOhUVH0rGbTrnkTBtLR4Au40W5aYaNQJ7+U3hTRrvpycSC1pUU3Wq3OXJd2FRDgKQJljQcpBw4V9j8GQ== Operator
-
   '
 admin_vm_ssh_keypair_name: my_ssh_public_key
 cloud_init_extra_script: '#!/bin/bash
-
   echo "HELLO WORLD"; date > READY; whoami >> READY'
 number_of_floating_ips_per_project: '1'
 project_ipv4_subnet: 192.168.200.0/24
