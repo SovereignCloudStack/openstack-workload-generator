@@ -12,7 +12,7 @@ from openstack.connection import Connection
 from openstack.config import loader
 
 from .entities import WorkloadGeneratorDomain
-from .entities.helpers import setup_logging, cloud_checker, item_checker, Config
+from .entities.helpers import setup_logging, cloud_checker, item_checker, Config, iso_timestamp, deep_merge_dict
 
 LOGGER = logging.getLogger()
 
@@ -182,12 +182,19 @@ if args.create_domains:
             LOGGER.info(f"Creating a a clouds yaml : {args.generate_clouds_yaml}")
             clouds_yaml_data_new = {"clouds": clouds_yaml_data}
             if os.path.exists(args.generate_clouds_yaml):
-                with open(args.generate_clouds_yaml, 'r') as file:
+                with open(args.generate_clouds_yaml, "r") as file:
                     existing_data = yaml.safe_load(file)
-                backup_file=f"{args.generate_clouds_yaml}_{iso_timestamp()}"
-                logging.warning(f"File {args.generate_clouds_yaml}, making an backup to {backup_file} and adding the new values")
-                shutil.copy2(args.generate_clouds_yaml, f"{args.generate_clouds_yaml}_{iso_timestamp()}")
-                clouds_yaml_data_new = deep_merge_dict(existing_data,clouds_yaml_data_new)
+                backup_file = f"{args.generate_clouds_yaml}_{iso_timestamp()}"
+                logging.warning(
+                    f"File {args.generate_clouds_yaml}, making an backup to {backup_file} and adding the new values"
+                )
+                shutil.copy2(
+                    args.generate_clouds_yaml,
+                    f"{args.generate_clouds_yaml}_{iso_timestamp()}",
+                )
+                clouds_yaml_data_new = deep_merge_dict(
+                    existing_data, clouds_yaml_data_new
+                )
 
             with open(args.generate_clouds_yaml, "w") as file:
                 yaml.dump(
