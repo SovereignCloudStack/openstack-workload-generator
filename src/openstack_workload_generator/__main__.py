@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import shutil
 import sys
 import os
 import argparse
@@ -27,7 +27,8 @@ from openstack.config import loader
 # make: *** [Makefile:25: type-check] Error 1
 
 from entities import WorkloadGeneratorDomain  # type: ignore[import-not-found]
-from entities.helpers import setup_logging, cloud_checker, item_checker, Config  # type: ignore[import-not-found]
+from entities.helpers import setup_logging, cloud_checker, item_checker, Config, \
+    iso_timestamp, deep_merge_dict  # type: ignore[import-not-found]
 
 LOGGER = logging.getLogger()
 
@@ -195,10 +196,18 @@ if args.create_domains:
                         machine_obj.delete_machine()
         if args.generate_clouds_yaml:
             LOGGER.info(f"Creating a a clouds yaml : {args.generate_clouds_yaml}")
-            clouds_yaml_data = {"clouds": clouds_yaml_data}
+            clouds_yaml_data_new = {"clouds": clouds_yaml_data}
+            if os.path.exists(args.generate_clouds_yaml):
+                with open(args.generate_clouds_yaml, 'r') as file:
+                    existing_data = yaml.safe_load(file)
+                backup_file=f"{args.generate_clouds_yaml}_{iso_timestamp()}"
+                logging.warning(f"File {args.generate_clouds_yaml}, making an backup to {backup_file} and adding the new values")
+                shutil.copy2(args.generate_clouds_yaml, f"{args.generate_clouds_yaml}_{iso_timestamp()}")
+                clouds_yaml_data_new = deep_merge_dict(existing_data,clouds_yaml_data_new)
+
             with open(args.generate_clouds_yaml, "w") as file:
                 yaml.dump(
-                    clouds_yaml_data,
+                    clouds_yaml_data_new,
                     file,
                     default_flow_style=False,
                     explicit_start=True,

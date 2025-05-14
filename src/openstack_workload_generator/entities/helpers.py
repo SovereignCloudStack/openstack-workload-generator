@@ -2,6 +2,7 @@ import inspect
 import logging
 import os
 import sys
+from datetime import datetime
 from typing import Tuple
 import coloredlogs
 
@@ -250,3 +251,19 @@ def item_checker(value: str) -> str:
     if not re.fullmatch(r"[a-zA-Z0-9]+[a-zA-Z0-9\-]*[a-zA-Z0-9]+", value):
         raise argparse.ArgumentTypeError("specify a valid name for an item")
     return value
+
+def iso_timestamp() -> str:
+    return datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+def deep_merge_dict(d1: dict, d2: dict) -> dict:
+    result = d1.copy()
+    for key, value in d2.items():
+        if (
+            key in result
+            and isinstance(result[key], dict)
+            and isinstance(value, dict)
+        ):
+            result[key] = deep_merge_dict(result[key], value)
+        else:
+            result[key] = value
+    return result
