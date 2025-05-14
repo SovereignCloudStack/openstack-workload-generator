@@ -11,23 +11,8 @@ import yaml
 from openstack.connection import Connection
 from openstack.config import loader
 
-# $ make type-check
-# source venv/bin/activate && python3 -m mypy --no-color-output --pretty src
-# src/openstack_workload_generator/__main__.py:12: error: Cannot find implementation or library
-# stub for module named "entities"  [import-not-found]
-#    from entities import WorkloadGeneratorDomain
-#    ^
-# src/openstack_workload_generator/__main__.py:13: error: Cannot find implementation or library stub for module
-# named "entities.helpers"  [import-not-found]
-#    from entities.helpers import setup_logging, cloud_checker, item_checker, Config
-#    ^
-# src/openstack_workload_generator/__main__.py:13: note: See
-# https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-imports
-# Found 2 errors in 1 file (checked 9 source files)
-# make: *** [Makefile:25: type-check] Error 1
-
-from entities import WorkloadGeneratorDomain  # type: ignore[import-not-found]
-from entities.helpers import setup_logging, cloud_checker, item_checker, Config  # type: ignore[import-not-found]
+from .entities import WorkloadGeneratorDomain
+from .entities.helpers import setup_logging, cloud_checker, item_checker, Config
 
 LOGGER = logging.getLogger()
 
