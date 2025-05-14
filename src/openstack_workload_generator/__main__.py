@@ -14,6 +14,7 @@ from openstack.config import loader
 from .entities import WorkloadGeneratorDomain
 from .entities.helpers import setup_logging, cloud_checker, item_checker, Config, iso_timestamp, deep_merge_dict
 
+
 LOGGER = logging.getLogger()
 
 parser = argparse.ArgumentParser(prog="Create workloads on openstack installations")
@@ -180,6 +181,7 @@ if args.create_domains:
                         machine_obj.delete_machine()
         if args.generate_clouds_yaml:
             LOGGER.info(f"Creating a a clouds yaml : {args.generate_clouds_yaml}")
+
             clouds_yaml_data_new = {"clouds": clouds_yaml_data}
             if os.path.exists(args.generate_clouds_yaml):
                 with open(args.generate_clouds_yaml, "r") as file:
