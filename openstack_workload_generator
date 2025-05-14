@@ -34,6 +34,6 @@ fi
 if [ "$1" = "deps" ];then
    exit 0
 fi
-cd "$rundir" || exit 1
-source venv/bin/activate
-exec python3 $rundir/src/openstack_workload_generator/__main__.py "$@"
+
+export PYTHONPATH="$rundir/src/"
+exec "${rundir}/venv/bin/python" -m openstack_workload_generator "$@"
