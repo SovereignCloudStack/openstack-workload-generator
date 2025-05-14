@@ -1,5 +1,6 @@
 import base64
 import logging
+import sys
 
 from openstack.compute.v2.server import Server
 from openstack.connection import Connection
@@ -41,13 +42,15 @@ class WorkloadGeneratorMachine:
         for image in self.conn.image.images():
             if image.name == image_name:
                 return image.id
-        return None
+        logging.fatal(f"Image {image_name} not found")
+        sys.exit(2)
 
     def get_flavor_id_by_name(self, flavor_name):
         for flavor in self.conn.compute.flavors():
             if flavor.name == flavor_name:
                 return flavor.id
-        return None
+        logging.fatal(f"Flavor {flavor_name} not found")
+        sys.exit(2)
 
     def delete_machine(self):
         LOGGER.warning(
