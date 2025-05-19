@@ -2,7 +2,7 @@ requests==2.32.2
 cachetools==5.3.2
 requests==2.32.2
 coloredlogs==15.0.1
-setuptools==70.0.0
+setuptools==78.1.1
 Jinja2==3.1.6
 PyYAML==6.0.1
 types-pyyaml
