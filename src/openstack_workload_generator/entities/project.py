@@ -123,17 +123,27 @@ class WorkloadGeneratorProject:
                 result.append(self.workload_machines[machine])
         return result
 
-    def get_role_id_by_name(self, role_name) -> str:
+    def get_role_id_by_name(self, role_name: str, required: bool = True) -> str | None:
         for role in self._admin_conn.identity.roles():
             if role.name == role_name:
                 return role.id
-        raise RuntimeError(f"No such role {role_name}")
+        if required:
+            raise RuntimeError(f"No such role {role_name}")
+        else:
+            return None
 
-    def assign_role_to_user_for_project(self, role_name: str):
+    def assign_role_to_user_for_project(self, role_name: str, required=True):
+        role_id = self.get_role_id_by_name(role_name, required=required)
+        if role_id is None and not required:
+            LOGGER.info(
+                f"No such role {role_name} not assigning it to {ProjectCache.ident_by_id(self.obj.id)}"
+            )
+            return
+
         self._admin_conn.identity.assign_project_role_to_user(
             user=self.user.obj.id,
             project=self.obj.id,
-            role=self.get_role_id_by_name(role_name),
+            role=role_id
         )
         LOGGER.info(
             f"Assigned {role_name} to {self.user.obj.id} for {ProjectCache.ident_by_id(self.obj.id)}"
