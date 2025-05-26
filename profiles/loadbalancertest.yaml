@@ -16,7 +16,7 @@ block_storage_quotas:
   volumes: 100
   gigabytes: 5000
 network_quotas:
-  security_groups: 50
+  security_groups: 100
 cloud_init_extra_script: |
   #!/bin/bash
   set -x
