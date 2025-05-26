@@ -1,6 +1,6 @@
 #!/bin/bash
 
-rundir="$(dirname $(readlink -f $0))"
+rundir="$(dirname "$(readlink -f "$0")")"
 cd "$rundir" || exit 1
 
 modification_time(){
