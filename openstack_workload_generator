@@ -7,27 +7,29 @@ modification_time(){
   python3 -c "import os; print(int(os.path.getmtime('$1')))"
 }
 
+export OWG_VIRTUAL_ENV="${OWG_VIRTUAL_ENV:-${rundir}/venv}"
+
 create_env(){
    set -e
-   rm -rf "${rundir}/venv"
-   python3 -m venv "${rundir}/venv"
-   source "${rundir}/venv/bin/activate"
+   rm -rf "${OWG_VIRTUAL_ENV}"
+   python3 -m venv "${OWG_VIRTUAL_ENV}"
+   source "${OWG_VIRTUAL_ENV}/bin/activate"
    pip install -r "${rundir}/requirements.txt"
-   touch -r "${rundir}/requirements.txt" "${rundir}/venv/bin/activate"
+   touch -r "${rundir}/requirements.txt" "${OWG_VIRTUAL_ENV}/bin/activate"
    set +e
 }
 
 
-if ! [ -d "${rundir}/venv" ] ;then
-   echo "Creating venv: ${rundir}/venv" >&2
+if ! [ -d "${OWG_VIRTUAL_ENV}" ] ;then
+   echo "Creating venv: ${OWG_VIRTUAL_ENV}" >&2
    echo
    create_env
-elif [[ "$(modification_time "${rundir}/requirements.txt")" -gt "$(modification_time "${rundir}/venv/bin/activate")" ]];then
-   echo "Recreating venv: ${rundir}/venv" >&2
+elif [[ "$(modification_time "${rundir}/requirements.txt")" -gt "$(modification_time "${OWG_VIRTUAL_ENV}/bin/activate")" ]];then
+   echo "Recreating venv: ${OWG_VIRTUAL_ENV}" >&2
    echo
    create_env
 else
-   source "${rundir}/venv/bin/activate"
+   source "${OWG_VIRTUAL_ENV}/bin/activate"
 fi
 
 
@@ -36,4 +38,4 @@ if [ "$1" = "deps" ];then
 fi
 
 export PYTHONPATH="$rundir/src/"
-exec "${rundir}/venv/bin/python" -m openstack_workload_generator "$@"
+exec "${OWG_VIRTUAL_ENV}/bin/python" -m openstack_workload_generator "$@"
