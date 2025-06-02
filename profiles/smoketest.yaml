@@ -17,3 +17,5 @@ cloud_init_extra_script: |
   pwd
   touch  SMOKETEST
   env > SMOKETEST-env
+  echo wallabilla > /etc/hostname
+  hostname wallabilla
