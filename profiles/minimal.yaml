@@ -1,0 +1,30 @@
+---
+admin_domain_password: "yolobanana"
+admin_vm_ssh_key: |
+  ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIACLmNpHitBkZGVbWAFxZjUATNvLjSktAKwokFIQ9Z1k schoechlin@osb-alliance.com
+  ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC2wE2xiuO+i3qmDvu8kCCKX7U7H1diOICbWmR2UrKIxqWgcfWMQsT3WclotJKuVJuKIWyFD6ZNwwLuvC3RxVSqhCiWjqxg3jzJBj7/C1O3IYyLGTUl/x7Cky530lf/aj4wrwt3Ketk/4QNwgget2nCvOy0S2NDCJ3rL6oIUjdJekvRrFf9IbWeX8fqYYCoh1cYJWto1XYPnhMDAB/lqtjN1ssurLSKoJg/bUT7q/KkIvvA/BOR2NMqS0aGx+bKhdkeB22V/t75Ct8ymoCYk9+MTC9i/QX20Fi7835/W7Gl18J8NiO9ebaWyYbsxZ5klWXQa5EiLLBDZ82OR88G+0FjXp1Z3VG6FcpdYpW7sxrT21HEvWOnQACZCdlzwyBJ31id/LjDRhJU6BmZm0Sa9EOJNL8XVOUUzuoa0XL1mIVTsmLpUwqLSfw6Ditb+q4afFi0iYMe3JKOt+JmftvBgeQCjNUsCzk+Ny2j6dZKv2aeF5LOQZGRM3HzG39Gkir3q1zdWmCl4lc3QQBfr5ZcdAp+wQMFSgJAudKffO9kdDVNoyjgih7rD3E+JjJdhY9//WQEEBm2vfEqm7qqEQUAELd0JBCivJmOhUVH0rGbTrnkTBtLR4Au40W5aYaNQJ7+U3hTRrvpycSC1pUU3Wq3OXJd2FRDgKQJljQcpBw4V9j8GQ== Operator
+admin_vm_password: "yolobanana"
+
+# Create
+# openstack flavor create --public Cirros-Minimal-Test --ram 1024 --disk 0 --vcpus 1
+# openstack flavor list
+vm_flavor: "Cirros-Minimal-Test"
+# Create
+# wget -O cirros.qcow2 https://download.cirros-cloud.net/0.6.3/cirros-0.6.3-x86_64-disk.img
+# qemu-img convert -f qcow2 -O raw cirros.qcow2 cirros.raw
+# openstack image create --public --file cirros.raw Cirros
+# openstack image list
+vm_image: "Cirros"
+vm_volume_size_gb: 10
+project_ipv4_subnet: "192.168.200.0/24"
+compute_quotas:
+  cores: 64
+  instances: 30
+  ram: 512000
+cloud_init_extra_script: |
+  #!/bin/bash
+  pwd
+  touch  SMOKETEST
+  env > SMOKETEST-env
+  echo wallabilla > /etc/hostname
+  hostname wallabilla
