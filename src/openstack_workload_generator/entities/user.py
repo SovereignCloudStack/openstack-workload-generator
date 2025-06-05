@@ -20,9 +20,16 @@ class WorkloadGeneratorUser:
             user_name, query={"domain_id": self.domain.id}
         )
 
-    def assign_role_to_user(self, role_name: str):
+    def assign_role_to_user(self, role_name: str, mandatory: bool = True):
+
+        role_id = self.get_role_id_by_name(role_name, mandatory)
+
+        if role_id is None:
+            LOGGER.warning(f"Role '{role_name}' not found, not assigning it")
+            return
+
         self.conn.identity.assign_project_role_to_user(
-            self.obj.id, self.domain.id, self.get_role_id_by_name(role_name)
+            self.obj.id, self.domain.id, role_id
         )
         LOGGER.info(
             f"Assigned role '{role_name}' to user '{self.obj.name}' in {DomainCache.ident_by_id(self.domain.id)}"
@@ -55,8 +62,11 @@ class WorkloadGeneratorUser:
         LOGGER.warning(f"Deleted user: {self.obj.name} / {self.obj.id}")
         self.obj = None
 
-    def get_role_id_by_name(self, role_name) -> str:
+    def get_role_id_by_name(self, role_name, mandatory: bool = True) -> str | None:
         for role in self.conn.identity.roles():
             if role.name == role_name:
                 return role.id
-        raise RuntimeError(f"No such role {role_name}")
+        if mandatory:
+            raise RuntimeError(f"No such role {role_name}")
+        else:
+            return None

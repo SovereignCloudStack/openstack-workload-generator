@@ -236,7 +236,7 @@ class WorkloadGeneratorProject:
         self.adapt_quota()
 
         self.assign_role_to_user_for_project("manager")
-        self.assign_role_to_user_for_project("load-balancer_member")
+        self.assign_role_to_user_for_project("load-balancer_member", required=False)
         self.assign_role_to_user_for_project("member")
 
         self.workload_network = WorkloadGeneratorNetwork(
