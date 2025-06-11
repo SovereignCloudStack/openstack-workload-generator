@@ -170,7 +170,7 @@ if args.create_domains:
                     )
                     if args.ansible_inventory:
                         workload_project.dump_inventory_hosts(args.ansible_inventory)
-                    if args.clouds_yaml:
+                    if args.generate_clouds_yaml:
                         clouds_yaml_data[
                             f"{workload_domain.domain_name}-{workload_project.project_name}"
                         ] = workload_project.get_clouds_yaml_data()
@@ -179,10 +179,11 @@ if args.create_domains:
                         args.delete_machines
                     ):
                         machine_obj.delete_machine()
-        if args.generate_clouds_yaml:
-            LOGGER.info(f"Creating a a clouds yaml : {args.generate_clouds_yaml}")
 
+        if args.generate_clouds_yaml:
+            LOGGER.info(f"Creating a clouds yaml : {args.generate_clouds_yaml}")
             clouds_yaml_data_new = {"clouds": clouds_yaml_data}
+
             if os.path.exists(args.generate_clouds_yaml):
                 with open(args.generate_clouds_yaml, "r") as file:
                     existing_data = yaml.safe_load(file)
