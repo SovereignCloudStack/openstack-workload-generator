@@ -3,6 +3,7 @@ import logging
 import os
 import sys
 from datetime import datetime
+from pathlib import Path
 from typing import Tuple, Any
 import coloredlogs
 
@@ -65,6 +66,18 @@ class Config:
             os.path.realpath(os.path.dirname(os.path.realpath(__file__)))
             + f"/../../../profiles/{config_file}"
         )
+
+        if os.getenv("OPENSTACK_WORKLOAD_MANAGER_PROFILES", None):
+            potential_profile_file = str(
+                Path(
+                    os.getenv("OPENSTACK_WORKLOAD_MANAGER_PROFILES", "NONE")
+                )  # satisfy type-check
+                / Path(config_file)
+            )
+            LOGGER.info(
+                "Environment variable OPENSTACK_WORKLOAD_MANAGER_PROFILES set,"
+                f" searching for potential {potential_profile_file}"
+            )
 
         if os.path.exists(config_file):
             Config._file = config_file
