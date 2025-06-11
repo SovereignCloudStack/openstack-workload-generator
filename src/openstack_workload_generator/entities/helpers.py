@@ -67,10 +67,15 @@ class Config:
             + f"/../../../profiles/{config_file}"
         )
 
-        if os.getenv("OPENSTACK_WORKLOAD_MANAGER_PROFILES",None):
-            potential_profile_file = str(Path(os.getenv("OPENSTACK_WORKLOAD_MANAGER_PROFILES")) / Path(config_file))
-            LOGGER.info("Environment variable OPENSTACK_WORKLOAD_MANAGER_PROFILES set,"
-                        f" searching for potential {potential_profile_file}")
+        if os.getenv("OPENSTACK_WORKLOAD_MANAGER_PROFILES", None):
+            potential_profile_file = str(
+                Path(os.getenv("OPENSTACK_WORKLOAD_MANAGER_PROFILES"))
+                / Path(config_file)
+            )
+            LOGGER.info(
+                "Environment variable OPENSTACK_WORKLOAD_MANAGER_PROFILES set,"
+                f" searching for potential {potential_profile_file}"
+            )
 
         if os.path.exists(config_file):
             Config._file = config_file

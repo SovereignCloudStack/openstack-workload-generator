@@ -71,7 +71,7 @@ parser.add_argument(
     default="default.yaml",
     help="The config file for environment creation, define a path to the"
     " yaml file or a subpath in the profiles folder of the tool "
-    "(you can overload the search path by setting the OPENSTACK_WORKLOAD_MANAGER_PROFILES environment variable)"
+    "(you can overload the search path by setting the OPENSTACK_WORKLOAD_MANAGER_PROFILES environment variable)",
 )
 
 exclusive_group_domain = parser.add_mutually_exclusive_group(required=True)
