@@ -141,9 +141,7 @@ class WorkloadGeneratorProject:
             return
 
         self._admin_conn.identity.assign_project_role_to_user(
-            user=self.user.obj.id,
-            project=self.obj.id,
-            role=role_id
+            user=self.user.obj.id, project=self.obj.id, role=role_id
         )
         LOGGER.info(
             f"Assigned {role_name} to {self.user.obj.id} for {ProjectCache.ident_by_id(self.obj.id)}"

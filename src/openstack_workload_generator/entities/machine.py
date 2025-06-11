@@ -101,6 +101,7 @@ class WorkloadGeneratorMachine:
         if self.obj:
             LOGGER.info(
                 f"Created server {self.obj.name}/{self.obj.id} in {ProjectCache.ident_by_id(network.project_id)}"
+                f" with password >>>{self.root_password}<<<"
             )
         else:
             raise RuntimeError(
