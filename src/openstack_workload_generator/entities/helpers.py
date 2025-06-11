@@ -15,6 +15,7 @@ import yaml
 
 LOGGER = logging.getLogger()
 
+
 class Config:
     _config: dict[str, str | dict[str, str] | None] = {
         "admin_domain_password": "yolobanana",
