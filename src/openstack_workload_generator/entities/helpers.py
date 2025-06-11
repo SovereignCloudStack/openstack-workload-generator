@@ -17,8 +17,8 @@ LOGGER = logging.getLogger()
 
 class Config:
     _config: dict[str, str | dict[str, str] | None] = {
-        "admin_domain_password": "",
-        "admin_vm_password": "",
+        "admin_domain_password": "yolobanana",
+        "admin_vm_password": "yolobanana",
         "admin_vm_ssh_key": "",
         "admin_vm_ssh_keypair_name": "my_ssh_public_key",
         "project_ipv4_subnet": "192.168.200.0/24",
