@@ -69,7 +69,9 @@ class Config:
 
         if os.getenv("OPENSTACK_WORKLOAD_MANAGER_PROFILES", None):
             potential_profile_file = str(
-                Path(os.getenv("OPENSTACK_WORKLOAD_MANAGER_PROFILES"))
+                Path(
+                    os.getenv("OPENSTACK_WORKLOAD_MANAGER_PROFILES", "NONE")
+                )  # satisfy type-check
                 / Path(config_file)
             )
             LOGGER.info(
