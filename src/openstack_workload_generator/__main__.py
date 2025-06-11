@@ -12,7 +12,14 @@ from openstack.connection import Connection
 from openstack.config import loader
 
 from .entities import WorkloadGeneratorDomain
-from .entities.helpers import setup_logging, cloud_checker, item_checker, Config, iso_timestamp, deep_merge_dict
+from .entities.helpers import (
+    setup_logging,
+    cloud_checker,
+    item_checker,
+    Config,
+    iso_timestamp,
+    deep_merge_dict,
+)
 
 
 LOGGER = logging.getLogger()
