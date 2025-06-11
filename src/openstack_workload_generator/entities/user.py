@@ -51,7 +51,7 @@ class WorkloadGeneratorUser:
         )
         self.assign_role_to_user("manager")
         LOGGER.info(
-            f"Created user {self.obj.name} / {self.obj.id} with password {self.obj.password} in {DomainCache.ident_by_id(self.domain.id)}"
+            f"Created user {self.obj.name} / {self.obj.id} with password >>>{self.obj.password}<<< in {DomainCache.ident_by_id(self.domain.id)}"
         )
         return self.obj
 
