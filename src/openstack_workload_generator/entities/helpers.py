@@ -3,6 +3,7 @@ import logging
 import os
 import sys
 from datetime import datetime
+from pathlib import Path
 from typing import Tuple, Any
 import coloredlogs
 
@@ -16,8 +17,8 @@ LOGGER = logging.getLogger()
 
 class Config:
     _config: dict[str, str | dict[str, str] | None] = {
-        "admin_domain_password": "yolobanana",
-        "admin_vm_password": "yolobanana",
+        "admin_domain_password": "",
+        "admin_vm_password": "",
         "admin_vm_ssh_key": "",
         "admin_vm_ssh_keypair_name": "my_ssh_public_key",
         "project_ipv4_subnet": "192.168.200.0/24",
@@ -65,6 +66,11 @@ class Config:
             os.path.realpath(os.path.dirname(os.path.realpath(__file__)))
             + f"/../../../profiles/{config_file}"
         )
+
+        if os.getenv("OPENSTACK_WORKLOAD_MANAGER_PROFILES",None):
+            potential_profile_file = str(Path(os.getenv("OPENSTACK_WORKLOAD_MANAGER_PROFILES")) / Path(config_file))
+            LOGGER.info("Environment variable OPENSTACK_WORKLOAD_MANAGER_PROFILES set,"
+                        f" searching for potential {potential_profile_file}")
 
         if os.path.exists(config_file):
             Config._file = config_file
