@@ -15,17 +15,10 @@ import yaml
 
 LOGGER = logging.getLogger()
 
-
-def get_random_password() -> str:
-    characters = string.ascii_letters + string.digits
-    password = "".join(secrets.choice(characters) for _ in range(16))
-    return password
-
-
 class Config:
     _config: dict[str, str | dict[str, str] | None] = {
-        "admin_domain_password": get_random_password(),
-        "admin_vm_password": get_random_password(),
+        "admin_domain_password": "yolobanana",
+        "admin_vm_password": "yolobanana",
         "admin_vm_ssh_key": "",
         "admin_vm_ssh_keypair_name": "my_ssh_public_key",
         "project_ipv4_subnet": "192.168.200.0/24",
