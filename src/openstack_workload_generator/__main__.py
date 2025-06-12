@@ -228,7 +228,7 @@ if args.create_domains:
 
         if args.generate_clouds_yaml:
             generated_clouds_yaml()
-            
+
         sys.exit(0)
     elif args.delete_projects:
         conn = establish_connection()
