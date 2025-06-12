@@ -22,6 +22,52 @@ from .entities.helpers import (
 )
 
 
+def establish_connection():
+    if args.clouds_yaml is None:
+        config = loader.OpenStackConfig()
+    else:
+        LOGGER.info(f"Loading connection configuration from {args.clouds_yaml}")
+        config = loader.OpenStackConfig(config_files=[args.clouds_yaml])
+    cloud_config = config.get_one(args.os_cloud)
+    return Connection(config=cloud_config)
+
+
+def generated_clouds_yaml():
+    LOGGER.info(f"Creating a clouds yaml : {args.generate_clouds_yaml}")
+    clouds_yaml_data_new = {"clouds": clouds_yaml_data}
+    initial_entries = 0
+    generated_entries = 0
+    total_entries = 0
+    if os.path.exists(args.generate_clouds_yaml):
+        with open(args.generate_clouds_yaml, "r") as file:
+            existing_data = yaml.safe_load(file)
+
+        initial_entries = len(existing_data.get("clouds", []))
+        backup_file = f"{args.generate_clouds_yaml}_{iso_timestamp()}"
+        logging.warning(
+            f"File {args.generate_clouds_yaml}, making an backup to {backup_file} and adding the new values"
+        )
+        shutil.copy2(
+            args.generate_clouds_yaml,
+            f"{args.generate_clouds_yaml}_{iso_timestamp()}",
+        )
+
+        generated_entries = len(clouds_yaml_data_new.get("clouds", []))
+        clouds_yaml_data_new = deep_merge_dict(existing_data, clouds_yaml_data_new)
+        total_entries = len(clouds_yaml_data_new.get("clouds", []))
+    with open(args.generate_clouds_yaml, "w") as file:
+        yaml.dump(
+            clouds_yaml_data_new,
+            file,
+            default_flow_style=False,
+            explicit_start=True,
+        )
+    LOGGER.info(
+        f"Generated {generated_entries} entries, number of entries in "
+        f"{args.generate_clouds_yaml} is now {total_entries} (old {initial_entries} entries)"
+    )
+
+
 LOGGER = logging.getLogger()
 
 parser = argparse.ArgumentParser(prog="Create workloads on openstack installations")
@@ -141,21 +187,11 @@ if args.os_cloud == "":
 
 setup_logging(args.log_level)
 
-
-def establish_connection():
-    if args.clouds_yaml is None:
-        config = loader.OpenStackConfig()
-    else:
-        LOGGER.info(f"Loading connection configuration from {args.clouds_yaml}")
-        config = loader.OpenStackConfig(config_files=[args.clouds_yaml])
-    cloud_config = config.get_one(args.os_cloud)
-    return Connection(config=cloud_config)
-
-
 time_start = time.time()
 
 Config.load_config(args.config)
 Config.show_effective_config()
+
 
 if args.create_domains:
     conn = establish_connection()
@@ -191,42 +227,8 @@ if args.create_domains:
                         machine_obj.delete_machine()
 
         if args.generate_clouds_yaml:
-            LOGGER.info(f"Creating a clouds yaml : {args.generate_clouds_yaml}")
-            clouds_yaml_data_new = {"clouds": clouds_yaml_data}
+            generated_clouds_yaml()
 
-            initial_entries = 0
-            generated_entries = 0
-            total_entries = 0
-
-            if os.path.exists(args.generate_clouds_yaml):
-                with open(args.generate_clouds_yaml, "r") as file:
-                    existing_data = yaml.safe_load(file)
-
-                initial_entries = len(existing_data.get("clouds", []))
-                backup_file = f"{args.generate_clouds_yaml}_{iso_timestamp()}"
-                logging.warning(
-                    f"File {args.generate_clouds_yaml}, making an backup to {backup_file} and adding the new values"
-                )
-                shutil.copy2(
-                    args.generate_clouds_yaml,
-                    f"{args.generate_clouds_yaml}_{iso_timestamp()}",
-                )
-
-                generated_entries = len(clouds_yaml_data_new.get("clouds", []))
-                clouds_yaml_data_new = deep_merge_dict(
-                    existing_data, clouds_yaml_data_new
-                )
-                total_entries = len(clouds_yaml_data_new.get("clouds", []))
-
-            with open(args.generate_clouds_yaml, "w") as file:
-                yaml.dump(
-                    clouds_yaml_data_new,
-                    file,
-                    default_flow_style=False,
-                    explicit_start=True,
-                )
-            LOGGER.info(f"Generated {generated_entries} entries, number of entries in "
-                        f"{args.generate_clouds_yaml} is now {total_entries} (old {initial_entries} entries)")
         sys.exit(0)
     elif args.delete_projects:
         conn = establish_connection()
