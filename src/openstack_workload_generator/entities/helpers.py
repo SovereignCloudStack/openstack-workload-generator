@@ -246,7 +246,7 @@ def setup_logging(log_level: str) -> Tuple[logging.Logger, str]:
     )
     logger = logging.getLogger()
     log_file = "STDOUT"
-    logging.basicConfig(format=log_format_string, level=log_level)
+    logging.basicConfig(format=log_format_string, level=log_level.upper())
 
     coloredlogs.DEFAULT_FIELD_STYLES["levelname"] = {"bold": True, "color": ""}
     coloredlogs.install(fmt=log_format_string, level=log_level.upper())
