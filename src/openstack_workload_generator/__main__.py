@@ -172,16 +172,18 @@ if args.create_domains:
 
         for workload_domain in workload_domains.values():
             for workload_project in workload_domain.get_projects(args.create_projects):
+                if args.generate_clouds_yaml:
+                    clouds_yaml_data[
+                        f"{workload_domain.domain_name}-{workload_project.project_name}"
+                    ] = workload_project.get_clouds_yaml_data()
+
                 if args.create_machines:
                     workload_project.get_and_create_machines(
                         args.create_machines, args.wait_for_machines
                     )
                     if args.ansible_inventory:
                         workload_project.dump_inventory_hosts(args.ansible_inventory)
-                    if args.generate_clouds_yaml:
-                        clouds_yaml_data[
-                            f"{workload_domain.domain_name}-{workload_project.project_name}"
-                        ] = workload_project.get_clouds_yaml_data()
+
                 elif args.delete_machines:
                     for machine_obj in workload_project.get_machines(
                         args.delete_machines
@@ -192,9 +194,15 @@ if args.create_domains:
             LOGGER.info(f"Creating a clouds yaml : {args.generate_clouds_yaml}")
             clouds_yaml_data_new = {"clouds": clouds_yaml_data}
 
+            initial_entries = 0
+            generated_entries = 0
+            total_entries = 0
+
             if os.path.exists(args.generate_clouds_yaml):
                 with open(args.generate_clouds_yaml, "r") as file:
                     existing_data = yaml.safe_load(file)
+
+                initial_entries = len(existing_data.get("clouds", []))
                 backup_file = f"{args.generate_clouds_yaml}_{iso_timestamp()}"
                 logging.warning(
                     f"File {args.generate_clouds_yaml}, making an backup to {backup_file} and adding the new values"
@@ -203,9 +211,12 @@ if args.create_domains:
                     args.generate_clouds_yaml,
                     f"{args.generate_clouds_yaml}_{iso_timestamp()}",
                 )
+
+                generated_entries = len(clouds_yaml_data_new.get("clouds", []))
                 clouds_yaml_data_new = deep_merge_dict(
                     existing_data, clouds_yaml_data_new
                 )
+                total_entries = len(clouds_yaml_data_new.get("clouds", []))
 
             with open(args.generate_clouds_yaml, "w") as file:
                 yaml.dump(
@@ -214,6 +225,8 @@ if args.create_domains:
                     default_flow_style=False,
                     explicit_start=True,
                 )
+            LOGGER.info(f"Generated {generated_entries} entries, number of entries in "
+                        f"{args.generate_clouds_yaml} is now {total_entries} (old {initial_entries} entries)")
         sys.exit(0)
     elif args.delete_projects:
         conn = establish_connection()
