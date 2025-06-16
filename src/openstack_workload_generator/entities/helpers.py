@@ -1,3 +1,4 @@
+import getpass
 import inspect
 import logging
 import os
@@ -62,9 +63,14 @@ class Config:
 
     @staticmethod
     def load_config(config_file: str):
-        potential_profile_file = str(
+
+        profile_path = str(
             os.path.realpath(os.path.dirname(os.path.realpath(__file__)))
-            + f"/../../../profiles/{config_file}"
+            + "/../../../profiles/"
+        )
+        potential_profile_file = str(
+            Path(os.getenv("OPENSTACK_WORKLOAD_MANAGER_PROFILES", profile_path))
+            / Path(config_file)
         )
 
         if os.getenv("OPENSTACK_WORKLOAD_MANAGER_PROFILES", None):
@@ -135,7 +141,9 @@ class Config:
 
     @staticmethod
     def get_admin_vm_password() -> str:
-        return Config.get("admin_vm_password")
+        if Config.get("admin_vm_password").upper() == "ASK_PASSWORD":
+            Config._config["admin_vm_password"] = getpass.getpass("Enter the wanted admin_vm_password: ")
+        return Config.get("admin_vm_password",  regex=r".{5,}")
 
     @staticmethod
     def get_vm_flavor() -> str:
@@ -171,6 +179,8 @@ class Config:
 
     @staticmethod
     def get_admin_domain_password() -> str:
+        if Config.get("admin_domain_password").upper() == "ASK_PASSWORD":
+            Config._config["admin_domain_password"] = getpass.getpass("Enter the wanted admin_domain_password: ")
         return Config.get("admin_domain_password", regex=r".{5,}")
 
     @staticmethod
@@ -192,7 +202,9 @@ class Config:
     @staticmethod
     def quota(quota_name: str, quota_category: str, default_value: int) -> int:
         if quota_category in Config._config:
-            value = Config._config.get(quota_name, default_value)
+            value = Config._config[quota_category].get(  # type: ignore
+                quota_name, default_value
+            )
             if isinstance(value, int):
                 return value
             else:
@@ -246,7 +258,7 @@ def setup_logging(log_level: str) -> Tuple[logging.Logger, str]:
     )
     logger = logging.getLogger()
     log_file = "STDOUT"
-    logging.basicConfig(format=log_format_string, level=log_level)
+    logging.basicConfig(format=log_format_string, level=log_level.upper())
 
     coloredlogs.DEFAULT_FIELD_STYLES["levelname"] = {"bold": True, "color": ""}
     coloredlogs.install(fmt=log_format_string, level=log_level.upper())

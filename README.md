@@ -26,35 +26,26 @@ basis for later automation.
 # Usage
 
 ```
-$ ./openstack_workload_generator --help
-usage: Create workloads on openstack installations [-h] [--log_level loglevel] [--os_cloud OS_CLOUD]
-                                                   [--ansible_inventory [ANSIBLE_INVENTORY]]
-                                                   [--clouds_yaml [CLOUDS_YAML]] [--wait_for_machines]
-                                                   [--generate_clouds_yaml [GENERATE_CLOUDS_YAML]]
-                                                   [--config CONFIG]
-                                                   (--create_domains DOMAINNAME [DOMAINNAME ...] |
-                                                   --delete_domains DOMAINNAME [DOMAINNAME ...])
-                                                   [--create_projects PROJECTNAME [PROJECTNAME ...] |
-                                                   --delete_projects PROJECTNAME [PROJECTNAME ...]]
-                                                   [--create_machines SERVERNAME [SERVERNAME ...] |
-                                                   --delete_machines SERVERNAME [SERVERNAME ...]]
+$ openstack_workload_generator --help
+usage: Create workloads on openstack installations [-h] [--log_level loglevel] [--os_cloud OS_CLOUD] [--ansible_inventory [ANSIBLE_INVENTORY]]
+                                                   [--clouds_yaml [CLOUDS_YAML]] [--wait_for_machines] [--generate_clouds_yaml [GENERATE_CLOUDS_YAML]]
+                                                   [--config CONFIG] (--create_domains DOMAINNAME [DOMAINNAME ...] | --delete_domains DOMAINNAME [DOMAINNAME ...])
+                                                   [--create_projects PROJECTNAME [PROJECTNAME ...] | --delete_projects PROJECTNAME [PROJECTNAME ...]]
+                                                   [--create_machines SERVERNAME [SERVERNAME ...] | --delete_machines SERVERNAME [SERVERNAME ...]]
 
 options:
   -h, --help            show this help message and exit
   --log_level loglevel  The loglevel
-  --os_cloud OS_CLOUD   The openstack config to use, defaults to the value of the OS_CLOUD environment variable or
-                        "admin" if the variable is not set
+  --os_cloud OS_CLOUD   The openstack config to use, defaults to the value of the OS_CLOUD environment variable or "admin" if the variable is not set
   --ansible_inventory [ANSIBLE_INVENTORY]
-                        Dump the created servers as an ansible inventory to the specified directory, adds a ssh
-                        proxy jump for the hosts without a floating ip
+                        Dump the created servers as an ansible inventory to the specified directory, adds a ssh proxy jump for the hosts without a floating ip
   --clouds_yaml [CLOUDS_YAML]
                         Use a specific clouds.yaml file
-  --wait_for_machines   Wait for every machine to be created (normally the provisioning only waits for machines
-                        which use floating ips)
+  --wait_for_machines   Wait for every machine to be created (normally the provisioning only waits for machines which use floating ips)
   --generate_clouds_yaml [GENERATE_CLOUDS_YAML]
                         Generate a openstack clouds.yaml file
-  --config CONFIG       The config file for environment creation, define a path to the yaml file or a subpath in
-                        the profiles folder
+  --config CONFIG       The config file for environment creation, define a path to the yaml file or a subpath in the profiles folder of the tool (you can overload
+                        the search path by setting the OPENSTACK_WORKLOAD_MANAGER_PROFILES environment variable)
   --create_domains DOMAINNAME [DOMAINNAME ...]
                         A list of domains to be created
   --delete_domains DOMAINNAME [DOMAINNAME ...]
@@ -62,12 +53,41 @@ options:
   --create_projects PROJECTNAME [PROJECTNAME ...]
                         A list of projects to be created in the created domains
   --delete_projects PROJECTNAME [PROJECTNAME ...]
-                        A list of projects to be deleted in the created domains, all child elements are
-                        recursively deleted
+                        A list of projects to be deleted in the created domains, all child elements are recursively deleted
   --create_machines SERVERNAME [SERVERNAME ...]
                         A list of vms to be created in the created domains
   --delete_machines SERVERNAME [SERVERNAME ...]
                         A list of vms to be deleted in the created projects
+```
+
+# Configuration
+
+The following cnfigurations:
+
+* `admin_domain_password`
+  * the password for the domain users which are created (User `<domain-name>_admin`)
+  * If you add "ASK_PASSWORD" as a value, the password will be asked in an interactive way
+* `admin_vm_password`:
+  * the password for the operating system user (the username depends on the type of image you are using)
+  * If you add "ASK_PASSWORD" as a value, the password will be asked in an interactive way
+* `vm_flavor`:
+  * the name of the flavor used to create virtual machines
+  * see `openstack flavor list`
+* `vm_image`:
+  * the name of the image used to create virtual machines
+  * see `openstack image list`
+* `vm_volume_size_gb`:
+  * the size of the persistent root volume
+* `project_ipv4_subnet`:
+  * the network cidr of the internal network
+* `*_quotas`:
+  * the quotas for the created projects
+  * execute the tool with `--log_level DEBUG` to see the configurable values
+* `public_network`:
+  * The name of the public network which is used for floating ips
+* `admin_vm_ssh_key`:
+  * A multiline string which ssh public keys
+
 ```
 
 # Testing Scenarios

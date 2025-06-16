@@ -97,6 +97,7 @@ class WorkloadGeneratorDomain:
 
         for project_name in create_projects:
             if project_name in self.workload_projects:
+                self.workload_projects[project_name].adapt_quota()
                 continue
             project = WorkloadGeneratorProject(
                 self.conn, project_name, self.obj, self.workload_user
