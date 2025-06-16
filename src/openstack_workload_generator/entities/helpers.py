@@ -1,3 +1,4 @@
+import getpass
 import inspect
 import logging
 import os
@@ -140,7 +141,9 @@ class Config:
 
     @staticmethod
     def get_admin_vm_password() -> str:
-        return Config.get("admin_vm_password")
+        if Config.get("admin_vm_password").upper() == "ASK_PASSWORD":
+            Config._config["admin_vm_password"] = getpass.getpass("Enter the wanted admin_vm_password: ")
+        return Config.get("admin_vm_password",  regex=r".{5,}")
 
     @staticmethod
     def get_vm_flavor() -> str:
@@ -176,6 +179,8 @@ class Config:
 
     @staticmethod
     def get_admin_domain_password() -> str:
+        if Config.get("admin_domain_password").upper() == "ASK_PASSWORD":
+            Config._config["admin_domain_password"] = getpass.getpass("Enter the wanted admin_domain_password: ")
         return Config.get("admin_domain_password", regex=r".{5,}")
 
     @staticmethod
