@@ -169,8 +169,6 @@ class WorkloadGeneratorProject:
         else:
             raise RuntimeError(f"Not implemented: {quota_category}")
 
-        # service_obj = getattr(self._admin_conn, api_area)
-        # current_quota = service_obj.get_quota_set(self.obj.id)
         LOGGER.debug(f"current quotas for {quota_category} : {current_quota}")
 
         new_quota = {}
@@ -193,7 +191,7 @@ class WorkloadGeneratorProject:
                 )
                 new_quota[key_name] = new_value
 
-        if len(new_quota):
+        if len(new_quota.keys()) > 0:
             set_quota_method = getattr(self._admin_conn, f"set_{api_area}_quotas")
             set_quota_method(self.obj.id, **new_quota)
             LOGGER.info(

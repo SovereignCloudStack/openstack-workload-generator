@@ -62,9 +62,14 @@ class Config:
 
     @staticmethod
     def load_config(config_file: str):
-        potential_profile_file = str(
+
+        profile_path = str(
             os.path.realpath(os.path.dirname(os.path.realpath(__file__)))
-            + f"/../../../profiles/{config_file}"
+            + "/../../../profiles/"
+        )
+        potential_profile_file = str(
+            Path(os.getenv("OPENSTACK_WORKLOAD_MANAGER_PROFILES", profile_path))
+            / Path(config_file)
         )
 
         if os.getenv("OPENSTACK_WORKLOAD_MANAGER_PROFILES", None):
@@ -192,7 +197,9 @@ class Config:
     @staticmethod
     def quota(quota_name: str, quota_category: str, default_value: int) -> int:
         if quota_category in Config._config:
-            value = Config._config.get(quota_name, default_value)
+            value = Config._config[quota_category].get(  # type: ignore
+                quota_name, default_value
+            )
             if isinstance(value, int):
                 return value
             else:
