@@ -20,6 +20,7 @@ from .entities.helpers import (
     iso_timestamp,
     deep_merge_dict,
 )
+from .entities.loadbalancer import WorkloadGeneratorLoadBalancer
 
 
 def establish_connection():
@@ -180,6 +181,20 @@ exclusive_group_machines.add_argument(
     help="A list of vms to be deleted in the created projects",
 )
 
+exclusive_group_load_balancers = parser.add_mutually_exclusive_group(required=False)
+exclusive_group_load_balancers.add_argument(
+    "--create_load_balancers",
+    action="store_true",
+    help="Create a load balancer per project",
+)
+
+exclusive_group_load_balancers.add_argument(
+    "--delete_load_balancers",
+    action="store_true",
+    help="Delete load balancers per project",
+)
+
+
 args = parser.parse_args()
 
 if args.os_cloud == "":
@@ -217,6 +232,15 @@ if args.create_domains:
                     workload_project.get_and_create_machines(
                         args.create_machines, args.wait_for_machines
                     )
+
+                    if args.create_load_balancers:
+                        lb = WorkloadGeneratorLoadBalancer(
+                            workload_project
+                        ).get_and_create_load_balancer()
+                        lb.add_members()
+                    if args.delete_load_balancers:
+                        lb = WorkloadGeneratorLoadBalancer(workload_project)
+
                     if args.ansible_inventory:
                         workload_project.dump_inventory_hosts(args.ansible_inventory)
 
