@@ -62,7 +62,38 @@ options:
 
 # Configuration
 
-The following cnfigurations:
+## Configguring the cloud admin access
+
+This is an example for a yaook based system.
+
+1. Gather openstack admin credentials
+   (example for a Yaook system)
+   ```
+   kubectl get secret -n yaook keystone-admin -o json | jq -r '.data | to_entries[] | "\(.key)=\(.value | @base64d)"'
+   ```
+2. Create a `clouds.yaml` file to access the test cloud
+   ```
+   clouds:
+     ustack-admin:
+       auth:
+         auth_url: https://keystone.my.ustack.cloud:443/v3
+         #
+         password: REDACTED
+         project_domain_name: Default
+         project_name: admin
+         user_domain_name: Default
+         username: yaook-sys-maint
+       verify: false
+   ```
+3. Specify environment variables
+   ```
+   export OS_CLIENT_CONFIG_FILE=$PWD/clouds.yaml
+   export OS_CLOUD="ustack-admin"
+   ```
+
+## Configuring profiles
+
+The following configurations are supported by the file referenced bv the `--config` option:
 
 * `admin_domain_password`
   * the password for the domain users which are created (User `<domain-name>_admin`)
@@ -88,7 +119,7 @@ The following cnfigurations:
 * `admin_vm_ssh_key`:
   * A multiline string which ssh public keys
 
-```
+Predefined profiles are availalable in the [profiles](./profiles) folder.
 
 # Testing Scenarios
 

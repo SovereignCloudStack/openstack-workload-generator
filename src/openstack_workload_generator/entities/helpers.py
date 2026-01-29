@@ -182,7 +182,7 @@ class Config:
 
     @staticmethod
     def get_admin_vm_ssh_key() -> str:
-        return Config.get("admin_vm_ssh_key", r"ssh-\S+\s\S+\s\S+", multi_line=True)
+        return Config.get("admin_vm_ssh_key", r"ssh-\S+\s\S+(\s\S+)+", multi_line=True)
 
     @staticmethod
     def get_admin_domain_password() -> str:
