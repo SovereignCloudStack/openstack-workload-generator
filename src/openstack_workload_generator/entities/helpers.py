@@ -32,6 +32,11 @@ class Config:
         "verify_ssl_certificate": "false",
         "cloud_init_extra_script": """#!/bin/bash\necho "HELLO WORLD"; date > READY; whoami >> READY""",
         "wait_for_server_timeout": "300",
+        "lb_name": "workload-generator-lb",
+        "lb_listener_name": "workload-generator-listener",
+        "lb_pool_name": "workload-generator-pool",
+        "lb_member_tcp_port": "22",
+        "lb_tcp_port": "22",
     }
 
     _file: str | None = None
@@ -142,8 +147,10 @@ class Config:
     @staticmethod
     def get_admin_vm_password() -> str:
         if Config.get("admin_vm_password").upper() == "ASK_PASSWORD":
-            Config._config["admin_vm_password"] = getpass.getpass("Enter the wanted admin_vm_password: ")
-        return Config.get("admin_vm_password",  regex=r".{5,}")
+            Config._config["admin_vm_password"] = getpass.getpass(
+                "Enter the wanted admin_vm_password: "
+            )
+        return Config.get("admin_vm_password", regex=r".{5,}")
 
     @staticmethod
     def get_vm_flavor() -> str:
@@ -180,7 +187,9 @@ class Config:
     @staticmethod
     def get_admin_domain_password() -> str:
         if Config.get("admin_domain_password").upper() == "ASK_PASSWORD":
-            Config._config["admin_domain_password"] = getpass.getpass("Enter the wanted admin_domain_password: ")
+            Config._config["admin_domain_password"] = getpass.getpass(
+                "Enter the wanted admin_domain_password: "
+            )
         return Config.get("admin_domain_password", regex=r".{5,}")
 
     @staticmethod
@@ -216,8 +225,28 @@ class Config:
             return default_value
 
     @staticmethod
-    def get_network_mtu():
+    def get_network_mtu() -> int:
         return int(Config.get("network_mtu", regex=r"\d+"))
+
+    @staticmethod
+    def get_lb_name() -> str:
+        return Config.get("lb_name", regex=r"\s+")
+
+    @staticmethod
+    def get_lb_listener_name() -> str:
+        return Config.get("lb_listener_name", regex=r"\s+")
+
+    @staticmethod
+    def get_lb_pool_name() -> str:
+        return Config.get("lb_pool_name", regex=r"\s+")
+
+    @staticmethod
+    def get_lb_member_tcp_port() -> int:
+        return int(Config.get("lb_member_tcp_port", regex=r"\d+"))
+
+    @staticmethod
+    def get_lb_tcp_port() -> int:
+        return int(Config.get("lb_tcp_port", regex=r"\d+"))
 
 
 class DomainCache:
